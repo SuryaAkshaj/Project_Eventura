@@ -1,0 +1,82 @@
+services:
+  # ──────────────────────────────────────────────────────────────────────────
+  # PostgreSQL 16 — Primary database
+  # Using port 5433 on host to avoid conflict with any locally installed Postgres
+  # ──────────────────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: eventura_postgres
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: eventura
+      POSTGRES_USER: eventura_user
+      POSTGRES_PASSWORD: eventura_secret
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eventura_user -d eventura"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - eventura_network
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # PgBouncer — Connection pooler (app connects here on 6432)
+  # Internal connection goes to postgres:5432 (Docker internal, unaffected by host port)
+  # ──────────────────────────────────────────────────────────────────────────
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: eventura_pgbouncer
+    restart: unless-stopped
+    ports:
+      - "6432:5432"
+    environment:
+      DATABASE_URL: "postgres://eventura_user:eventura_secret@postgres:5432/eventura"
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 100
+      DEFAULT_POOL_SIZE: 20
+      AUTH_TYPE: md5
+      ADMIN_USERS: eventura_user
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - eventura_network
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Redis 7 — Session blacklist, rate limiting, QR nonces
+  # ──────────────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: eventura_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass eventura_redis_secret
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "eventura_redis_secret", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - eventura_network
+
+# ──────────────────────────────────────────────────────────────────────────
+# Volumes & Networks
+# ──────────────────────────────────────────────────────────────────────────
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  eventura_network:
+    driver: bridge

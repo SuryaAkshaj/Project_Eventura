@@ -1,0 +1,147 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Eventura — Institutional Event Management",
+  description: "The premier platform for campus events, certificates, and co-curricular management.",
+};
+
+export default function LandingPage() {
+  return (
+    <div className="min-h-screen bg-background text-on-surface flex flex-col">
+      {/* Navigation */}
+      <header className="bg-surface border-b border-outline-variant sticky top-0 z-50">
+        <div className="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop h-16 max-w-7xl mx-auto">
+          <Link href="/" className="font-headline-md text-headline-md font-bold text-primary flex items-center gap-2">
+            <span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>local_activity</span>
+            Eventura
+          </Link>
+          <nav className="hidden md:flex items-center gap-8">
+            <a href="#features" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">Features</a>
+            <a href="#about" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">About</a>
+            <a href="#contact" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">Contact</a>
+          </nav>
+          <div className="flex items-center gap-3">
+            <Link href="/login" className="font-label-sm text-label-sm text-on-surface-variant hover:text-primary border border-outline-variant rounded-md px-4 py-2 transition-colors">
+              Sign In
+            </Link>
+            <Link href="/signup" className="font-label-sm text-label-sm bg-primary text-on-primary hover:bg-primary/90 rounded-md px-4 py-2 transition-colors shadow-sm">
+              Get Started
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <section className="flex-1 flex flex-col items-center justify-center px-margin-mobile md:px-margin-desktop py-xl text-center relative overflow-hidden bg-gradient-to-b from-surface to-surface-container-low">
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute top-20 left-20 w-72 h-72 bg-primary rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 right-20 w-72 h-72 bg-tertiary rounded-full blur-3xl"></div>
+        </div>
+        <div className="relative z-10 max-w-4xl mx-auto">
+          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full font-label-sm text-label-sm mb-6 border border-primary/20">
+            <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
+            Trusted by 50+ Universities
+          </div>
+          <h1 className="font-display-lg text-display-lg text-on-surface mb-6 leading-tight">
+            Campus Events,
+            <span className="text-primary"> Reimagined</span>
+          </h1>
+          <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto mb-8">
+            The institutional-grade platform for discovering, managing, and certifying campus events. 
+            From registration to blockchain-verified credentials — all in one place.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/signup"
+              className="bg-primary text-on-primary font-title-md text-title-md px-8 py-4 rounded-xl hover:bg-primary/90 transition-colors shadow-lg shadow-primary/25 flex items-center gap-2 justify-center"
+            >
+              Start for Free
+              <span className="material-symbols-outlined">arrow_forward</span>
+            </Link>
+            <Link
+              href="/events"
+              className="bg-surface border-2 border-outline-variant text-on-surface font-title-md text-title-md px-8 py-4 rounded-xl hover:bg-surface-container-low transition-colors flex items-center gap-2 justify-center"
+            >
+              Browse Events
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Feature Cards */}
+      <section id="features" className="py-xl px-margin-mobile md:px-margin-desktop bg-surface-container-low">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="font-headline-lg text-headline-lg text-on-surface text-center mb-xl">
+            Everything your institution needs
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+            {[
+              { icon: "confirmation_number", title: "Smart Ticketing", desc: "QR-code tickets with real-time validation and attendance tracking.", color: "bg-primary-container" },
+              { icon: "workspace_premium", title: "Blockchain Certificates", desc: "Tamper-proof co-curricular credentials issued automatically after events.", color: "bg-tertiary-fixed" },
+              { icon: "insights", title: "Live Analytics", desc: "Real-time dashboards for organizers, administrators, and finance teams.", color: "bg-secondary-container" },
+            ].map((feat) => (
+              <div key={feat.title} className="bg-surface border border-outline-variant rounded-xl p-lg shadow-sm hover:shadow-md transition-shadow">
+                <div className={`w-12 h-12 rounded-xl ${feat.color} flex items-center justify-center mb-4`}>
+                  <span className="material-symbols-outlined text-primary text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>{feat.icon}</span>
+                </div>
+                <h3 className="font-title-md text-title-md text-on-surface mb-2">{feat.title}</h3>
+                <p className="font-body-md text-body-md text-on-surface-variant">{feat.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Stats */}
+      <section className="py-xl px-margin-mobile md:px-margin-desktop bg-primary text-on-primary">
+        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-gutter text-center">
+          {[
+            { value: "50+", label: "Partner Institutions" },
+            { value: "12K+", label: "Events Hosted" },
+            { value: "450K+", label: "Tickets Issued" },
+            { value: "98.5%", label: "Uptime SLA" },
+          ].map((stat) => (
+            <div key={stat.label}>
+              <div className="font-display-lg text-display-lg text-on-primary">{stat.value}</div>
+              <div className="font-label-sm text-label-sm text-primary-fixed-dim uppercase tracking-wider mt-1">{stat.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-xl px-margin-mobile md:px-margin-desktop bg-surface-container-low text-center">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="font-headline-lg text-headline-lg text-on-surface mb-4">Ready to transform your campus?</h2>
+          <p className="font-body-lg text-body-lg text-on-surface-variant mb-8">
+            Join hundreds of institutions already using Eventura to streamline their event ecosystem.
+          </p>
+          <Link
+            href="/signup"
+            className="bg-primary text-on-primary font-title-md text-title-md px-8 py-4 rounded-xl hover:bg-primary/90 transition-colors shadow-lg shadow-primary/25 inline-flex items-center gap-2"
+          >
+            Get Started Today
+            <span className="material-symbols-outlined">arrow_forward</span>
+          </Link>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-surface-container border-t border-outline-variant py-lg px-margin-mobile md:px-margin-desktop">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="font-bold text-primary text-[20px] flex items-center gap-2">
+            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>local_activity</span>
+            Eventura
+          </div>
+          <div className="flex flex-wrap justify-center gap-6">
+            <a href="#" className="font-label-sm text-label-sm text-on-surface-variant hover:text-primary">Terms</a>
+            <a href="#" className="font-label-sm text-label-sm text-on-surface-variant hover:text-primary">Privacy</a>
+            <a href="#" className="font-label-sm text-label-sm text-on-surface-variant hover:text-primary">Support</a>
+          </div>
+          <p className="font-label-sm text-label-sm text-on-surface-variant">© 2024 Eventura. Institutional Grade Event Management.</p>
+        </div>
+      </footer>
+    </div>
+  );
+}

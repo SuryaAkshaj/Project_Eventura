@@ -1,0 +1,379 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")    // PgBouncer URL (port 6432) — runtime queries
+  directUrl  = env("DIRECT_URL")      // Direct PostgreSQL (port 5432) — migrations only
+  extensions = [uuid_ossp(map: "uuid-ossp"), pgcrypto]
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum RoleName {
+  SUPER_ADMIN
+  COLLEGE_ADMIN
+  CLUB_PRESIDENT
+  EVENT_MANAGER
+  ATTENDEE
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum EventVisibility {
+  ONLY_MY_COLLEGE
+  SELECTED_COLLEGES
+  ALL_PLATFORM
+  PUBLIC
+}
+
+enum EventStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
+
+enum PaymentStatus {
+  FREE
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum RegistrationStatus {
+  REGISTERED
+  WAITLISTED
+  CANCELLED
+  CHECKED_IN
+}
+
+enum ScanResult {
+  SUCCESS
+  DUPLICATE
+  INVALID
+  PAYMENT_PENDING
+  EXPIRED
+}
+
+// ============================================================================
+// GLOBAL TABLES (no collegeId — platform-level data)
+// ============================================================================
+
+model User {
+  id              String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  email           String    @unique
+  passwordHash    String?                       // Null for Google OAuth users
+  firstName       String
+  lastName        String
+  avatarUrl       String?
+  googleId        String?   @unique
+  isEmailVerified Boolean   @default(false)
+  isActive        Boolean   @default(true)
+  lastLoginAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  roleAssignments RoleAssignment[]
+  registrations   Registration[]
+  scanLogs        ScanLog[]
+  auditLogs       AuditLog[]
+
+  @@index([email])
+}
+
+model College {
+  id             String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name           String
+  domain         String         @unique     // e.g. "woxsen.edu.in" for Google OAuth detection
+  logoUrl        String?
+  brandingColor  String?        @default("#2E3192")
+  website        String?
+  address        String?
+  approvalStatus ApprovalStatus @default(PENDING)
+  approvedAt     DateTime?
+  approvedBy     String?        @db.Uuid    // Super Admin userId who approved
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  clubs           Club[]
+  roleAssignments RoleAssignment[]
+  events          Event[]
+  sharedEvents    SharedEvent[]
+  razorpayAccount RazorpayAccount?
+
+  @@index([domain])
+  @@index([approvalStatus])
+}
+
+model Role {
+  id          String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name        RoleName       @unique
+  permissions Permission[]
+
+  assignments RoleAssignment[]
+}
+
+model Permission {
+  id     String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  action String // e.g. "events:write", "scanner:use", "finance:read"
+  roleId String @db.Uuid
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([action, roleId])
+}
+
+// ============================================================================
+// TENANT-SCOPED TABLES (mandatory collegeId for RLS)
+// ============================================================================
+
+model Club {
+  id             String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name           String
+  description    String?
+  logoUrl        String?
+  collegeId      String         @db.Uuid           // TENANT ID
+  college        College        @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  approvalStatus ApprovalStatus @default(PENDING)
+  approvedAt     DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  roleAssignments RoleAssignment[]
+  events          Event[]
+
+  @@index([collegeId])
+  @@index([approvalStatus])
+}
+
+model RoleAssignment {
+  id        String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId    String         @db.Uuid
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId    String         @db.Uuid
+  role      Role           @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  collegeId String         @db.Uuid               // TENANT ID
+  college   College        @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  clubId    String?        @db.Uuid               // Null for College Admin and Attendee
+  club      Club?          @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  status    ApprovalStatus @default(PENDING)
+  expiresAt DateTime?                              // Auto-expiry for EVENT_MANAGER role
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([userId, roleId, collegeId, clubId])
+  @@index([collegeId])
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Event {
+  id             String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  title          String
+  description    String?
+  bannerUrl      String?
+  collegeId      String          @db.Uuid           // TENANT ID (owner)
+  college        College         @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  clubId         String?         @db.Uuid            // Null if organised by college directly
+  club           Club?           @relation(fields: [clubId], references: [id], onDelete: SetNull)
+  visibility     EventVisibility @default(ONLY_MY_COLLEGE)
+  status         EventStatus     @default(DRAFT)
+  category       String?                             // "Technical", "Cultural", "Sports" etc.
+  format         String?                             // "In-Person", "Online", "Hybrid"
+  venue          String?
+  onlineLink     String?
+  startDate      DateTime
+  endDate        DateTime
+  timezone       String          @default("Asia/Kolkata")
+  maxCapacity    Int?
+  isMultiDay     Boolean         @default(false)
+  ticketPrice    Decimal         @default(0)         @db.Decimal(10, 2)
+  isFree         Boolean         @default(true)
+  readinessScore Int?                                // Pre-flight checklist score 0-100
+  publishedAt    DateTime?
+  cancelledAt    DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  sessions      EventSession[]
+  registrations Registration[]
+  sharedWith    SharedEvent[]
+  feedback      EventFeedback[]
+  auditLogs     AuditLog[]
+
+  @@index([collegeId])
+  @@index([status])
+  @@index([startDate])
+  @@index([visibility])
+}
+
+model EventSession {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  eventId     String   @db.Uuid
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  title       String
+  startTime   DateTime
+  endTime     DateTime
+  venue       String?
+  speakerName String?
+  createdAt   DateTime @default(now())
+
+  @@index([eventId])
+}
+
+model SharedEvent {
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  eventId   String   @db.Uuid
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  collegeId String   @db.Uuid                       // College being given visibility
+  college   College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, collegeId])
+  @@index([collegeId])
+}
+
+model Registration {
+  id             String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId         String             @db.Uuid
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId        String             @db.Uuid
+  event          Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  status         RegistrationStatus @default(REGISTERED)
+  paymentStatus  PaymentStatus      @default(FREE)
+  qrToken        String?            @unique           // HMAC-signed token
+  qrNonce        String?                              // Rotating nonce (60s TTL in Redis)
+  checkedInAt    DateTime?
+  idempotencyKey String             @unique            // Prevents duplicate registrations
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  payment     Payment?
+  scanLogs    ScanLog[]
+  certificate Certificate?
+
+  @@unique([userId, eventId])
+  @@index([eventId])
+  @@index([qrToken])
+  @@index([status])
+}
+
+model Payment {
+  id                String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  registrationId    String        @unique @db.Uuid
+  registration      Registration  @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  razorpayOrderId   String?       @unique
+  razorpayPaymentId String?       @unique
+  amount            Decimal       @db.Decimal(10, 2)
+  platformFee       Decimal       @default(0)         @db.Decimal(10, 2)
+  organizerAmount   Decimal       @db.Decimal(10, 2)
+  currency          String        @default("INR")
+  status            PaymentStatus @default(PENDING)
+  webhookReceived   Boolean       @default(false)
+  idempotencyKey    String        @unique
+  paidAt            DateTime?
+  refundedAt        DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([razorpayOrderId])
+  @@index([status])
+}
+
+model RazorpayAccount {
+  id                String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  collegeId         String   @unique @db.Uuid
+  college           College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  razorpayAccountId String   @unique          // Razorpay Route linked account ID
+  isVerified        Boolean  @default(false)
+  verifiedAt        DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model ScanLog {
+  id             String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  registrationId String       @db.Uuid
+  registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  scannedBy      String       @db.Uuid         // Event Manager userId
+  scanner        User         @relation(fields: [scannedBy], references: [id])
+  result         ScanResult
+  ipAddress      String?
+  deviceInfo     String?
+  createdAt      DateTime     @default(now())
+
+  @@index([registrationId])
+  @@index([scannedBy])
+  @@index([createdAt])
+}
+
+model Waitlist {
+  id         String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId     String    @db.Uuid
+  eventId    String    @db.Uuid
+  position   Int
+  notifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@unique([userId, eventId])
+  @@index([eventId, position])
+}
+
+model Certificate {
+  id             String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  registrationId String       @unique @db.Uuid
+  registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  pdfUrl         String?
+  blockchainHash String?       // For future blockchain credential issuance
+  issuedAt       DateTime     @default(now())
+
+  @@index([registrationId])
+}
+
+model EventFeedback {
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  eventId   String   @db.Uuid
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String   @db.Uuid
+  rating    Int      // 1-5
+  comment   String?
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+}
+
+model AuditLog {
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId    String?  @db.Uuid
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  eventId   String?  @db.Uuid
+  event     Event?   @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  action    String   // e.g. "EVENT_PUBLISHED", "ROLE_ASSIGNED", "QR_SCANNED"
+  details   Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([eventId])
+  @@index([createdAt])
+}
+
+model PlatformSettings {
+  id                 String   @id @default("singleton")   // Only one row ever
+  platformFeeEnabled Boolean  @default(false)
+  platformFeePercent Decimal  @default(2.5)               @db.Decimal(5, 2)
+  maintenanceMode    Boolean  @default(false)
+  updatedAt          DateTime @updatedAt
+}

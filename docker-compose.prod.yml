@@ -1,0 +1,24 @@
+# Production overrides — used when deploying to Railway / AWS / Supabase
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# In production, DATABASE_URL and REDIS_URL point to managed services.
+# No local postgres/pgbouncer/redis containers are needed.
+# Simply remove or comment out those services and supply env vars from your
+# cloud provider's connection strings.
+
+version: "3.9"
+
+# Example: override postgres to use an external Supabase/RDS connection
+# services:
+#   postgres:
+#     image: postgres:16-alpine   # kept only for health dependency resolution
+#     environment:
+#       POSTGRES_DB: ${POSTGRES_DB}
+#       POSTGRES_USER: ${POSTGRES_USER}
+#       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+#
+# In Railway: set DATABASE_URL and DIRECT_URL as Railway environment variables.
+# PgBouncer is provided by Railway's connection pooler — remove the pgbouncer service.
+# Redis: use Railway Redis plugin or Upstash — set REDIS_URL accordingly.
+
+# Zero code changes needed — only environment variable changes.

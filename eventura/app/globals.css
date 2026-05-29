@@ -1,0 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Public+Sans:wght@600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Shadcn CSS variables — mapped to Eventura design tokens */
+    --background: 0 0% 98.8%;
+    --foreground: 240 3% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 3% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 3% 12%;
+    --primary: 238 70% 28%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 213 20% 57%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 270 14% 94%;
+    --muted-foreground: 245 7% 34%;
+    --accent: 238 52% 37%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 40%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 250 11% 81%;
+    --input: 250 11% 81%;
+    --ring: 238 70% 28%;
+    --radius: 0.5rem;
+  }
+
+  * {
+    box-sizing: border-box;
+    @apply border-border;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: #fcf8ff;
+    color: #1b1b21;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer utilities {
+  .material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+  }
+}
