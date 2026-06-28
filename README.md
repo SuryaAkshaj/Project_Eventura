@@ -76,6 +76,15 @@ Eventura replaces the fragmented way colleges manage events — Google Forms for
 
 ---
 
+Frontend: Next.js 14, App Router, TypeScript, Tailwind CSS v3, port 3000
+- Backend: Node.js + Express + TypeScript, port 4000
+- All API routes prefixed with `/api/v1/`
+- Test Attendee: `test@woxsen.edu.in` / `Test@1234`
+- Super Admin: `admin@eventura.app` / `Admin@1234`
+- Club President: `collegeadmin@woxsen.edu.in` / `Test@1234`
+- College Ad`colmin: legeadmin@woxsen.edu.in` / `Test@1234`
+- Frontend API base: `http://localhost:4000/api/v1`
+
 ## Architecture
 
 ```
