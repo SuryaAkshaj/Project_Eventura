@@ -1,7 +1,12 @@
 import { Router } from 'express';
 import { authMiddleware, optionalAuthMiddleware } from '@middleware/auth.middleware';
 import { requireRole } from '@middleware/rbac.middleware';
+import { asyncHandler } from '@shared/utils/asyncHandler';
+import { prismaAdmin } from '@config/database';
+import { AppError } from '@shared/errors/AppError';
 import * as eventsController from './events.controller';
+import * as eventsService from './events.service';
+
 
 const router = Router();
 
@@ -46,8 +51,85 @@ router.get(
   eventsController.getEventStats,
 );
 
+// GET /events/:id/sub-events — get sub-events of a fest (public)
+router.get('/:id/sub-events', asyncHandler(async (req, res) => {
+  const subEvents = await eventsService.getSubEvents(req.params.id);
+  return res.json({ success: true, data: subEvents });
+}));
+
 // GET /events/:id — get single event detail (auth optional)
 router.get('/:id', optionalAuthMiddleware, eventsController.getEventById);
+
+// POST /events/:id/feedback — submit event rating
+router.post(
+  '/:id/feedback',
+  authMiddleware,
+  asyncHandler(async (req, res) => {
+    const { id: eventId } = req.params;
+    const { rating, comment } = req.body;
+    const userId = req.user!.sub;
+
+    // Validate rating
+    if (!rating || rating < 1 || rating > 5) {
+      throw AppError.badRequest('Rating must be between 1 and 5');
+    }
+
+    // Verify user attended the event (must be CHECKED_IN)
+    const registration = await prismaAdmin.registration.findFirst({
+      where: { eventId, userId, status: 'CHECKED_IN' }
+    });
+
+    if (!registration) {
+      throw AppError.forbidden('You can only rate events you have attended');
+    }
+
+    // Upsert feedback
+    const feedback = await prismaAdmin.eventFeedback.upsert({
+      where: { eventId_userId: { eventId, userId } },
+      update: { rating, comment },
+      create: { eventId, userId, rating, comment },
+    });
+
+    return res.status(201).json({
+      success: true,
+      data: feedback,
+      message: 'Thank you for your feedback!'
+    });
+  })
+);
+
+// GET /events/:id/feedback — get event ratings summary
+router.get('/:id/feedback', asyncHandler(async (req, res) => {
+  const { id: eventId } = req.params;
+
+  const feedbacks = await prismaAdmin.eventFeedback.findMany({
+    where: { eventId },
+    select: { rating: true, comment: true, createdAt: true },
+  });
+
+  if (feedbacks.length === 0) {
+    return res.json({
+      success: true,
+      data: { averageRating: null, totalReviews: 0, distribution: {}, reviews: [] }
+    });
+  }
+
+  const averageRating = feedbacks.reduce((sum, f) => sum + f.rating, 0) / feedbacks.length;
+
+  // Rating distribution: { 5: 10, 4: 8, 3: 3, 2: 1, 1: 0 }
+  const distribution: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+  feedbacks.forEach(f => distribution[f.rating]++);
+
+  return res.json({
+    success: true,
+    data: {
+      averageRating: Math.round(averageRating * 10) / 10,
+      totalReviews: feedbacks.length,
+      distribution,
+      reviews: feedbacks.slice(0, 10), // Latest 10 reviews
+    }
+  });
+}));
 
 // PATCH /events/:id — update event
 router.patch(

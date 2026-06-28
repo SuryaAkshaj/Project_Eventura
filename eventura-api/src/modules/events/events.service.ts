@@ -1,15 +1,7 @@
 import { prismaAdmin } from '@config/database';
+import { AppError } from '@shared/errors/AppError';
 import { CreateEventDto, UpdateEventDto, EventQueryDto } from './events.types';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
-function buildAppError(message: string, statusCode = 400): Error & { statusCode: number } {
-  const err = new Error(message) as Error & { statusCode: number };
-  err.statusCode = statusCode;
-  return err;
-}
+import { getDeadlineStatus } from '@shared/utils/deadline';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Visibility filter — builds a Prisma OR condition for which events are visible
@@ -40,8 +32,8 @@ export async function getEvents(
   query: EventQueryDto,
   userContext: { collegeId: string | null; role: string },
 ) {
-  const page = query.page ?? 1;
-  const limit = query.limit ?? 12;
+  const page = Number(query.page ?? 1) || 1;
+  const limit = Number(query.limit ?? 12) || 12;
   const skip = (page - 1) * limit;
 
   const where: any = {
@@ -63,12 +55,60 @@ export async function getEvents(
     ];
     delete where.OR;
   }
-  if (query.category) where.category = query.category;
+  if (query.category) {
+    where.category = {
+      contains: query.category,
+      mode: 'insensitive',
+    };
+  }
   if (query.format) where.format = query.format;
   if (query.isFree !== undefined) where.isFree = query.isFree;
   // Only apply date filters if caller explicitly requests a date range
   if (query.startDateFrom) where.startDate = { ...where.startDate, gte: new Date(query.startDateFrom) };
   if (query.startDateTo) where.startDate = { ...where.startDate, lte: new Date(query.startDateTo) };
+
+  // New filters
+  if (query.city) {
+    where.college = { ...where.college, city: { contains: query.city, mode: 'insensitive' } };
+  }
+  if (query.state) {
+    where.college = { ...where.college, state: { equals: query.state, mode: 'insensitive' } };
+  }
+  if (query.collegeId) {
+    where.collegeId = query.collegeId;
+  }
+  if (query.hasPrize) {
+    where.prizePool = { gt: 0 };
+  }
+  if (query.minPrize) {
+    where.prizePool = { gte: Number(query.minPrize) };
+  }
+  if (query.closingSoon) {
+    const now = new Date();
+    const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    // Merge with existing AND if present
+    const closingFilter = {
+      OR: [
+        { registrationDeadline: { gte: now, lte: sevenDaysLater } },
+        { AND: [{ registrationDeadline: null }, { startDate: { gte: now, lte: sevenDaysLater } }] },
+      ]
+    };
+    if (where.AND) {
+      where.AND.push(closingFilter);
+    } else {
+      where.AND = [{ OR: visibilityWhere(userContext) }, closingFilter];
+      delete where.OR;
+    }
+  }
+  // Filter by eventType
+  if (query.eventType) {
+    where.eventType = query.eventType as any;
+  }
+  if (query.isFest) {
+    where.eventType = 'FEST';
+  }
+  // Exclude sub-events from main listing (sub-events appear on parent fest page)
+  where.parentEventId = null;
 
   const [events, total] = await Promise.all([
     prismaAdmin.event.findMany({
@@ -77,7 +117,7 @@ export async function getEvents(
       take: limit,
       orderBy: { [query.sortBy ?? 'startDate']: query.sortOrder ?? 'asc' },
       include: {
-        college: { select: { id: true, name: true, logoUrl: true } },
+        college: { select: { id: true, name: true, city: true, state: true, logoUrl: true, slug: true } },
         club: { select: { id: true, name: true, logoUrl: true } },
         _count: { select: { registrations: true } },
       },
@@ -85,8 +125,17 @@ export async function getEvents(
     prismaAdmin.event.count({ where }),
   ]);
 
+  // Attach deadline status to each event
+  const eventsWithDeadline = events.map(event => ({
+    ...event,
+    deadlineStatus: getDeadlineStatus({
+      registrationDeadline: event.registrationDeadline,
+      startDate: event.startDate,
+    })
+  }));
+
   return {
-    events,
+    events: eventsWithDeadline,
     meta: {
       total,
       page,
@@ -108,15 +157,27 @@ export async function getEventById(
     where: { id: eventId },
     include: {
       sessions: { orderBy: { startTime: 'asc' } },
-      college: { select: { id: true, name: true, logoUrl: true } },
+      college: { select: { id: true, name: true, logoUrl: true, city: true, state: true, slug: true } },
       club: { select: { id: true, name: true, logoUrl: true } },
       sharedWith: { select: { collegeId: true } },
-      _count: { select: { registrations: true } },
+      _count: { select: { registrations: true, subEvents: true } },
+      // Include sub-events for Fests
+      subEvents: {
+        where: { status: 'PUBLISHED' },
+        include: {
+          _count: { select: { registrations: true } },
+        },
+        orderBy: { startDate: 'asc' },
+      },
+      // Include parent event for sub-events
+      parentEvent: {
+        select: { id: true, title: true, eventType: true }
+      },
     },
   });
 
   if (!event) {
-    throw buildAppError('Event not found', 404);
+    throw AppError.notFound('Event not found');
   }
 
   // Visibility check
@@ -125,7 +186,7 @@ export async function getEventById(
   const isMyCollege = event.visibility === 'ONLY_MY_COLLEGE' && event.collegeId === userContext.collegeId;
   const isShared =
     event.visibility === 'SELECTED_COLLEGES' &&
-    event.sharedWith.some(s => s.collegeId === userContext.collegeId);
+    (event.sharedWith as Array<{ collegeId: string }>).some((s: { collegeId: string }) => s.collegeId === userContext.collegeId);
   const isOwnCollege = event.collegeId === userContext.collegeId;
 
   // Published check — organisers of the same college can see drafts
@@ -134,7 +195,7 @@ export async function getEventById(
     (isOwnCollege && event.status !== 'CANCELLED');
 
   if (!canSee && event.status !== 'PUBLISHED') {
-    throw buildAppError('Event not found', 404);
+    throw AppError.notFound('Event not found');
   }
 
   return event;
@@ -154,7 +215,7 @@ export async function createEvent(
       where: { id: dto.clubId, collegeId: organizerContext.collegeId },
     });
     if (!club) {
-      throw buildAppError('Club does not belong to your college', 400);
+      throw AppError.badRequest('Club does not belong to your college');
     }
   }
 
@@ -178,6 +239,25 @@ export async function createEvent(
       isMultiDay: dto.isMultiDay ?? false,
       ticketPrice: dto.ticketPrice ?? 0,
       isFree: (dto.ticketPrice ?? 0) === 0,
+      prizePool: dto.prizePool ?? undefined,
+      registrationDeadline: dto.registrationDeadline ? new Date(dto.registrationDeadline) : undefined,
+      teamSizeMin: dto.teamSizeMin ?? undefined,
+      teamSizeMax: dto.teamSizeMax ?? undefined,
+      contactEmail: dto.contactEmail ?? undefined,
+      contactPhone: dto.contactPhone ?? undefined,
+      // Event type system
+      eventType: (dto.eventType ?? 'OTHER') as any,
+      parentEventId: dto.parentEventId ?? null,
+      // Fest-specific
+      accommodation: dto.accommodation ?? false,
+      accommodationInfo: dto.accommodationInfo,
+      guestPerformers: dto.guestPerformers,
+      sponsorNames: dto.sponsorNames,
+      festEdition: dto.festEdition,
+      // Competition-specific
+      competitionRules: dto.competitionRules,
+      judgingCriteria: dto.judgingCriteria,
+      submissionFormat: dto.submissionFormat,
       // Sessions via nested create
       sessions: dto.sessions
         ? {
@@ -231,11 +311,11 @@ export async function updateEvent(
   });
 
   if (!existing) {
-    throw buildAppError('Event not found or you do not have permission to edit it', 404);
+    throw AppError.notFound('Event not found or you do not have permission to edit it');
   }
 
   if (existing.status === 'CANCELLED' || existing.status === 'COMPLETED') {
-    throw buildAppError('Cannot edit a cancelled or completed event', 400);
+    throw AppError.badRequest('Cannot edit a cancelled or completed event');
   }
 
   // If visibility changes to SELECTED_COLLEGES, replace SharedEvent records
@@ -268,6 +348,14 @@ export async function updateEvent(
         ticketPrice: dto.ticketPrice,
         isFree: dto.ticketPrice === 0,
       }),
+      ...(dto.prizePool !== undefined && { prizePool: dto.prizePool }),
+      ...(dto.registrationDeadline !== undefined && {
+        registrationDeadline: dto.registrationDeadline ? new Date(dto.registrationDeadline) : null,
+      }),
+      ...(dto.teamSizeMin !== undefined && { teamSizeMin: dto.teamSizeMin }),
+      ...(dto.teamSizeMax !== undefined && { teamSizeMax: dto.teamSizeMax }),
+      ...(dto.contactEmail !== undefined && { contactEmail: dto.contactEmail }),
+      ...(dto.contactPhone !== undefined && { contactPhone: dto.contactPhone }),
       ...(dto.visibility === 'SELECTED_COLLEGES' && dto.selectedCollegeIds && {
         sharedWith: {
           create: dto.selectedCollegeIds.map(cid => ({ collegeId: cid })),
@@ -305,6 +393,23 @@ export async function updateEvent(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// getSubEvents — fetch published sub-events for a fest
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function getSubEvents(parentEventId: string) {
+  return prismaAdmin.event.findMany({
+    where: {
+      parentEventId,
+      status: 'PUBLISHED',
+    },
+    include: {
+      _count: { select: { registrations: true } },
+    },
+    orderBy: { startDate: 'asc' },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // getReadinessScore
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -317,14 +422,15 @@ export async function getReadinessScore(
     include: {
       sessions: { select: { id: true } },
       college: { include: { razorpayAccount: true } },
+      _count: { select: { subEvents: true } },
     },
   });
 
   if (!event) {
-    throw buildAppError('Event not found', 404);
+    throw AppError.notFound('Event not found');
   }
 
-  const checks = {
+  const checks: Record<string, boolean> = {
     title: !!event.title,
     description: !!event.description,
     banner: !!event.bannerUrl,
@@ -334,22 +440,31 @@ export async function getReadinessScore(
     payment: event.isFree
       ? true
       : !!(event.college.razorpayAccount?.isVerified),
-    sessions: event.sessions.length > 0,
+    // Type-specific checks:
+    sessions: event.eventType === 'FEST'
+      ? (event._count.subEvents > 0 || event.sessions.length > 0)
+      : event.sessions.length > 0,
+    rules: event.eventType === 'COMPETITION'
+      ? !!event.competitionRules
+      : true, // Not required for non-competitions
+    registrationDeadline: !!event.registrationDeadline,
   };
 
-  const scoreMap = {
+  const scoreMap: Record<string, number> = {
     title: 10,
     description: 10,
     banner: 10,
     dates: 15,
     location: 15,
     capacity: 10,
-    payment: 20,
+    payment: 15,
     sessions: 10,
+    rules: 5,
+    registrationDeadline: 5,
   };
 
-  const score = (Object.keys(checks) as Array<keyof typeof checks>).reduce((acc, key) => {
-    return acc + (checks[key] ? scoreMap[key] : 0);
+  const score = Object.entries(checks).reduce((sum, [key, passed]) => {
+    return sum + (passed ? (scoreMap[key] || 0) : 0);
   }, 0);
 
   // Persist score
@@ -362,6 +477,7 @@ export async function getReadinessScore(
     score,
     checks,
     canPublish: score >= 60,
+    eventType: event.eventType,
   };
 }
 
@@ -378,17 +494,17 @@ export async function publishEvent(
   });
 
   if (!event) {
-    throw buildAppError('Event not found', 404);
+    throw AppError.notFound('Event not found');
   }
 
   if (event.status !== 'DRAFT') {
-    throw buildAppError('Only draft events can be published', 400);
+    throw AppError.badRequest('Only draft events can be published');
   }
 
   // Check readiness
   const readiness = await getReadinessScore(eventId, organizerContext);
   if (!readiness.canPublish) {
-    throw buildAppError(`Complete the readiness checklist before publishing (score: ${readiness.score}/100, minimum: 60)`, 400);
+    throw AppError.badRequest(`Complete the readiness checklist before publishing (score: ${readiness.score}/100, minimum: 60)`);
   }
 
   const updated = await prismaAdmin.event.update({
@@ -420,11 +536,11 @@ export async function cancelEvent(
   });
 
   if (!event) {
-    throw buildAppError('Event not found', 404);
+    throw AppError.notFound('Event not found');
   }
 
   if (event.status === 'CANCELLED' || event.status === 'COMPLETED') {
-    throw buildAppError('Event is already cancelled or completed', 400);
+    throw AppError.badRequest('Event is already cancelled or completed');
   }
 
   // Get all paid registrations and mark as refunded
@@ -473,15 +589,15 @@ export async function deleteEvent(
   });
 
   if (!event) {
-    throw buildAppError('Event not found', 404);
+    throw AppError.notFound('Event not found');
   }
 
   if (event.status !== 'DRAFT') {
-    throw buildAppError('Only draft events can be deleted', 400);
+    throw AppError.badRequest('Only draft events can be deleted');
   }
 
   if (event._count.registrations > 0) {
-    throw buildAppError('Cannot delete an event that has registrations', 400);
+    throw AppError.badRequest('Cannot delete an event that has registrations');
   }
 
   await prismaAdmin.event.delete({ where: { id: eventId } });
@@ -497,8 +613,8 @@ export async function getOrgEvents(
   organizerContext: { collegeId: string },
   query: EventQueryDto,
 ) {
-  const page = query.page ?? 1;
-  const limit = query.limit ?? 12;
+  const page = Number(query.page ?? 1) || 1;
+  const limit = Number(query.limit ?? 12) || 12;
   const skip = (page - 1) * limit;
 
   const where: any = {
@@ -556,7 +672,7 @@ export async function getEventStats(
   });
 
   if (!event) {
-    throw buildAppError('Event not found', 404);
+    throw AppError.notFound('Event not found');
   }
 
   const [registrationStats, recentCheckIns] = await Promise.all([

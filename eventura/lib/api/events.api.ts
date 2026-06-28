@@ -7,10 +7,18 @@ export interface EventQuery {
   category?: string;
   format?: string;
   isFree?: boolean;
+  city?: string;
+  state?: string;
+  collegeId?: string;
+  hasPrize?: boolean;
+  minPrize?: number;
+  closingSoon?: boolean;
   startDateFrom?: string;
   startDateTo?: string;
   sortBy?: string;
   sortOrder?: string;
+  eventType?: string;
+  isFest?: boolean;
 }
 
 export interface CreateEventPayload {
@@ -29,8 +37,30 @@ export interface CreateEventPayload {
   maxCapacity?: number;
   isMultiDay?: boolean;
   ticketPrice?: number;
+  prizePool?: number;
+  registrationDeadline?: string;
+  teamSizeMin?: number;
+  teamSizeMax?: number;
+  contactEmail?: string;
+  contactPhone?: string;
   selectedCollegeIds?: string[];
   sessions?: { title: string; startTime: string; endTime: string; venue?: string; speakerName?: string }[];
+
+  // Event type system
+  eventType?: 'FEST' | 'COMPETITION' | 'WORKSHOP' | 'SEMINAR' | 'OTHER';
+  parentEventId?: string;
+
+  // Fest-specific
+  accommodation?: boolean;
+  accommodationInfo?: string;
+  guestPerformers?: string;
+  sponsorNames?: string;
+  festEdition?: number;
+
+  // Competition-specific
+  competitionRules?: string;
+  judgingCriteria?: string;
+  submissionFormat?: string;
 }
 
 export const eventsApi = {
@@ -41,9 +71,15 @@ export const eventsApi = {
   getEventById: (id: string) =>
     apiClient.get(`/events/${id}`),
 
+  getSubEvents: (eventId: string) =>
+    apiClient.get(`/events/${eventId}/sub-events`),
+
   // Organiser
   getOrgEvents: (query?: EventQuery) =>
     apiClient.get('/events/org/my-events', { params: query }),
+
+  getOrgFests: () =>
+    apiClient.get('/events/org/my-events?eventType=FEST'),
 
   createEvent: (payload: CreateEventPayload) =>
     apiClient.post('/events', payload),

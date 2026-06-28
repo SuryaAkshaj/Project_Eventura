@@ -17,6 +17,7 @@ import qrRoutes from '@modules/qr/qr.routes';
 import paymentsRoutes from '@modules/payments/payments.routes';
 import adminRoutes from '@modules/admin/admin.routes';
 import certificatesRoutes from '@modules/certificates/certificates.routes';
+import bookmarksRoutes from '@modules/bookmarks/bookmarks.routes';
 import { logger } from '@shared/utils/logger';
 import { sanitizeObject } from '@shared/utils/sanitize';
 
@@ -71,9 +72,9 @@ app.use(cookieParser());
 
 // 4. Body parsing
 // Raw body for Razorpay webhook signature verification (must come BEFORE express.json)
-app.use('/payments/webhook', express.raw({ type: 'application/json' }));
+app.use('/api/v1/payments/webhook', express.raw({ type: 'application/json' }));
 app.use((req, _res, next) => {
-  if (req.path === '/payments/webhook' && Buffer.isBuffer(req.body)) {
+  if (req.path === '/api/v1/payments/webhook' && Buffer.isBuffer(req.body)) {
     (req as any).rawBody = req.body.toString('utf-8');
   }
   next();
@@ -84,7 +85,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // 4a. Sanitize all request bodies against XSS (skip webhook path — raw body)
 app.use((req, _res, next) => {
-  if (req.body && req.path !== '/payments/webhook') {
+  if (req.body && req.path !== '/api/v1/payments/webhook') {
     req.body = sanitizeObject(req.body);
   }
   next();
@@ -104,36 +105,27 @@ app.use(generalRateLimiter);
 // Health check — public, no auth required
 app.use('/health', healthRouter);
 
-// Auth — public, rate-limited (Mission 3)
-app.use('/auth', authRouter);
+// API v1 routes — all versioned under /api/v1/
+app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/colleges', collegesRouter);
+app.use('/api/v1/events', eventsRouter);
+app.use('/api/v1/registrations', registrationsRoutes);
+app.use('/api/v1/qr', qrRoutes);
+app.use('/api/v1/payments', paymentsRoutes);
+app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/certificates', certificatesRoutes);
+app.use('/api/v1/bookmarks', bookmarksRoutes);
 
-// Colleges — public read endpoints (Mission 3)
-app.use('/colleges', collegesRouter);
-
-// Events — Mission 5A
-app.use('/events', eventsRouter);
-
-// Registrations — Mission 6
-app.use('/registrations', registrationsRoutes);
-app.use('/qr', qrRoutes);
-
-// Payments — Mission 7
-app.use('/payments', paymentsRoutes);
-
-// Admin — Mission 8
-app.use('/admin', adminRoutes);
-
-// Certificates — Mission 9
-app.use('/certificates', certificatesRoutes);
-
-// API v1 routes — to be added in future missions
-// app.use('/api/v1/events', authMiddleware, tenantMiddleware, eventsRouter);
-// app.use('/api/v1/clubs', authMiddleware, tenantMiddleware, clubsRouter);
-// app.use('/api/v1/registrations', authMiddleware, tenantMiddleware, registrationsRouter);
-// app.use('/api/v1/qr', authMiddleware, tenantMiddleware, scanRateLimiter, qrRouter);
-// app.use('/api/v1/payments', authMiddleware, tenantMiddleware, paymentsRouter);
-// app.use('/api/v1/certificates', authMiddleware, tenantMiddleware, certificatesRouter);
-// app.use('/api/v1/admin', authMiddleware, requireRole('SUPER_ADMIN'), adminRouter);
+// Backward-compatibility redirects for old unversioned routes
+// These forward requests to the /api/v1/ equivalents
+app.use('/auth', (req, res) => res.redirect(307, `/api/v1/auth${req.url}`));
+app.use('/colleges', (req, res) => res.redirect(307, `/api/v1/colleges${req.url}`));
+app.use('/events', (req, res) => res.redirect(307, `/api/v1/events${req.url}`));
+app.use('/registrations', (req, res) => res.redirect(307, `/api/v1/registrations${req.url}`));
+app.use('/qr', (req, res) => res.redirect(307, `/api/v1/qr${req.url}`));
+app.use('/payments', (req, res) => res.redirect(307, `/api/v1/payments${req.url}`));
+app.use('/admin', (req, res) => res.redirect(307, `/api/v1/admin${req.url}`));
+app.use('/certificates', (req, res) => res.redirect(307, `/api/v1/certificates${req.url}`));
 
 // 404 handler
 app.use((req, res) => {

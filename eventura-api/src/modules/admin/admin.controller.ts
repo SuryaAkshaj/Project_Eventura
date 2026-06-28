@@ -70,3 +70,8 @@ export const getMultiTenantHealth = asyncHandler(async (req, res) => {
   const health = await adminService.getMultiTenantHealth();
   return res.json({ success: true, data: health });
 });
+
+export const getAllEvents = asyncHandler(async (req, res) => {
+  const result = await adminService.getAllEvents(req.query as any);
+  return res.json({ success: true, data: result.events, meta: result.meta });
+});

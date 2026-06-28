@@ -1,6 +1,8 @@
 import * as crypto from 'crypto';
 import { prismaAdmin } from '@config/database';
 import { redis } from '@config/redis';
+import { AppError } from '@shared/errors/AppError';
+import { sendEventConfirmationEmail } from '@shared/utils/email';
 import { RegisterEventDto } from './registrations.types';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -45,16 +47,10 @@ export async function registerForEvent(dto: RegisterEventDto, userId: string, co
     include: { _count: { select: { registrations: { where: { status: { in: ['REGISTERED', 'CHECKED_IN'] } } } } } }
   });
   if (!event) {
-    const err: any = new Error('Event not found');
-    err.code = 'EVENT_NOT_FOUND';
-    err.status = 404;
-    throw err;
+    throw AppError.notFound('Event not found');
   }
   if (event.status !== 'PUBLISHED') {
-    const err: any = new Error('Event is not available for registration');
-    err.code = 'EVENT_NOT_PUBLISHED';
-    err.status = 400;
-    throw err;
+    throw AppError.badRequest('Event is not available for registration');
   }
 
   // 3. Check if user already registered — idempotent: return existing instead of throwing
@@ -68,10 +64,7 @@ export async function registerForEvent(dto: RegisterEventDto, userId: string, co
   // 4. Check visibility — can this user access this event?
   const canAccess = await checkEventVisibility(event, collegeId);
   if (!canAccess) {
-    const err: any = new Error('You do not have access to this event');
-    err.code = 'EVENT_NOT_ACCESSIBLE';
-    err.status = 403;
-    throw err;
+    throw AppError.forbidden('You do not have access to this event');
   }
 
   // 5. Check capacity
@@ -143,6 +136,28 @@ export async function registerForEvent(dto: RegisterEventDto, userId: string, co
     });
   }
 
+  // 11. Send event confirmation email (non-critical)
+  if (event.isFree || registration.status === 'REGISTERED') {
+    try {
+      const user = await prismaAdmin.user.findUnique({
+        where: { id: userId },
+        select: { firstName: true, email: true },
+      });
+      if (user) {
+        await sendEventConfirmationEmail(
+          user.email,
+          user.firstName,
+          event.title,
+          new Date(event.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }),
+          (event as any).venue || '',
+        );
+      }
+    } catch (emailErr) {
+      // Email sending is non-critical — log but don't fail the registration
+      console.error('[EMAIL] Failed to send confirmation:', emailErr);
+    }
+  }
+
   return { ...registration, waitlisted: false };
 }
 
@@ -187,16 +202,10 @@ export async function getRegistrationById(registrationId: string, userId: string
   });
 
   if (!registration) {
-    const err: any = new Error('Registration not found');
-    err.code = 'REGISTRATION_NOT_FOUND';
-    err.status = 404;
-    throw err;
+    throw AppError.notFound('Registration not found');
   }
   if (registration.userId !== userId) {
-    const err: any = new Error('You do not have access to this registration');
-    err.code = 'REGISTRATION_FORBIDDEN';
-    err.status = 403;
-    throw err;
+    throw AppError.forbidden('You do not have access to this registration');
   }
 
   return registration;
@@ -213,28 +222,16 @@ export async function cancelRegistration(registrationId: string, userId: string)
   });
 
   if (!registration) {
-    const err: any = new Error('Registration not found');
-    err.code = 'REGISTRATION_NOT_FOUND';
-    err.status = 404;
-    throw err;
+    throw AppError.notFound('Registration not found');
   }
   if (registration.userId !== userId) {
-    const err: any = new Error('You do not have access to this registration');
-    err.code = 'REGISTRATION_FORBIDDEN';
-    err.status = 403;
-    throw err;
+    throw AppError.forbidden('You do not have access to this registration');
   }
   if (registration.status === 'CHECKED_IN') {
-    const err: any = new Error('Cannot cancel a checked-in registration');
-    err.code = 'REGISTRATION_CHECKED_IN';
-    err.status = 409;
-    throw err;
+    throw AppError.conflict('Cannot cancel a checked-in registration');
   }
   if (registration.status === 'CANCELLED') {
-    const err: any = new Error('Registration is already cancelled');
-    err.code = 'REGISTRATION_ALREADY_CANCELLED';
-    err.status = 409;
-    throw err;
+    throw AppError.conflict('Registration is already cancelled');
   }
 
   const wasWaitlisted = registration.status === 'WAITLISTED';
@@ -299,16 +296,10 @@ export async function getEventAttendees(eventId: string, organizerCollegeId: str
   });
 
   if (!event) {
-    const err: any = new Error('Event not found');
-    err.code = 'EVENT_NOT_FOUND';
-    err.status = 404;
-    throw err;
+    throw AppError.notFound('Event not found');
   }
   if (event.collegeId !== organizerCollegeId) {
-    const err: any = new Error('You do not have access to this event');
-    err.code = 'EVENT_FORBIDDEN';
-    err.status = 403;
-    throw err;
+    throw AppError.forbidden('You do not have access to this event');
   }
 
   return prismaAdmin.registration.findMany({

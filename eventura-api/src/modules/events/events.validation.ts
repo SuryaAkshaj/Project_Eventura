@@ -17,6 +17,12 @@ const eventBaseSchema = z.object({
   maxCapacity: z.number().int().positive().optional(),
   isMultiDay: z.boolean().default(false),
   ticketPrice: z.number().min(0).default(0),
+  prizePool: z.number().min(0).optional(),
+  registrationDeadline: z.string().datetime().optional(),
+  teamSizeMin: z.number().int().positive().optional(),
+  teamSizeMax: z.number().int().positive().optional(),
+  contactEmail: z.string().email().optional(),
+  contactPhone: z.string().optional(),
   selectedCollegeIds: z.array(z.string().uuid()).optional(),
   sessions: z.array(z.object({
     title: z.string(),
@@ -25,6 +31,22 @@ const eventBaseSchema = z.object({
     venue: z.string().optional(),
     speakerName: z.string().optional(),
   })).optional(),
+
+  // Event type system
+  eventType: z.enum(['FEST', 'COMPETITION', 'WORKSHOP', 'SEMINAR', 'OTHER']).default('OTHER'),
+  parentEventId: z.string().uuid().optional(),
+
+  // Fest-specific
+  accommodation: z.boolean().default(false),
+  accommodationInfo: z.string().max(1000).optional(),
+  guestPerformers: z.string().optional(),
+  sponsorNames: z.string().optional(),
+  festEdition: z.number().int().positive().optional(),
+
+  // Competition-specific
+  competitionRules: z.string().max(5000).optional(),
+  judgingCriteria: z.string().max(2000).optional(),
+  submissionFormat: z.string().max(1000).optional(),
 });
 
 // createEventSchema with cross-field refinements
@@ -53,9 +75,16 @@ export const eventQuerySchema = z.object({
   category: z.string().optional(),
   format: z.string().optional(),
   isFree: z.coerce.boolean().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  collegeId: z.string().uuid().optional(),
+  hasPrize: z.coerce.boolean().optional(),
+  minPrize: z.coerce.number().optional(),
+  closingSoon: z.coerce.boolean().optional(),
   startDateFrom: z.string().optional(),
   startDateTo: z.string().optional(),
-  sortBy: z.enum(['startDate', 'createdAt', 'title']).default('startDate'),
+  sortBy: z.enum(['startDate', 'createdAt', 'title', 'prizePool', 'registrationDeadline']).default('startDate'),
   sortOrder: z.enum(['asc', 'desc']).default('asc'),
+  eventType: z.string().optional(),
+  isFest: z.coerce.boolean().optional(),
 });
-

@@ -17,9 +17,10 @@ export default function LandingPage() {
             Eventura
           </Link>
           <nav className="hidden md:flex items-center gap-8">
+            <Link href="/colleges" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">Colleges</Link>
+            <Link href="/events" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">Events</Link>
             <a href="#features" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">Features</a>
             <a href="#about" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">About</a>
-            <a href="#contact" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">Contact</a>
           </nav>
           <div className="flex items-center gap-3">
             <Link href="/login" className="font-label-sm text-label-sm text-on-surface-variant hover:text-primary border border-outline-variant rounded-md px-4 py-2 transition-colors">
@@ -41,7 +42,7 @@ export default function LandingPage() {
         <div className="relative z-10 max-w-4xl mx-auto">
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full font-label-sm text-label-sm mb-6 border border-primary/20">
             <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
-            Trusted by 50+ Universities
+            Built for Institutions
           </div>
           <h1 className="font-display-lg text-display-lg text-on-surface mb-6 leading-tight">
             Campus Events,
@@ -97,10 +98,10 @@ export default function LandingPage() {
       <section className="py-xl px-margin-mobile md:px-margin-desktop bg-primary text-on-primary">
         <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-gutter text-center">
           {[
-            { value: "50+", label: "Partner Institutions" },
-            { value: "12K+", label: "Events Hosted" },
-            { value: "450K+", label: "Tickets Issued" },
-            { value: "98.5%", label: "Uptime SLA" },
+            { value: '100+', label: 'Colleges' },
+            { value: 'National', label: 'Coverage' },
+            { value: 'Real-Time', label: 'QR Check-in' },
+            { value: 'Verified', label: 'Certificates' },
           ].map((stat) => (
             <div key={stat.label}>
               <div className="font-display-lg text-display-lg text-on-primary">{stat.value}</div>
@@ -127,6 +128,31 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* About Section */}
+      <section id="about" className="py-xl px-margin-mobile md:px-margin-desktop bg-white">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="font-headline-lg text-headline-lg text-on-surface mb-4">About Eventura</h2>
+          <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">
+            Eventura is built for Indian colleges and organisations that want a modern, secure,
+            and unified way to manage events — from registration to certificates.
+          </p>
+        </div>
+      </section>
+
+      {/* Contact Section */}
+      <section id="contact" className="py-xl px-margin-mobile md:px-margin-desktop bg-surface-container-low text-center">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="font-headline-lg text-headline-lg text-on-surface mb-4">Get in Touch</h2>
+          <p className="font-body-lg text-body-lg text-on-surface-variant mb-8">Have questions? We&apos;d love to hear from you.</p>
+          <a
+            href="mailto:support@eventura.app"
+            className="inline-flex items-center gap-2 bg-primary text-on-primary font-title-md text-title-md px-8 py-3 rounded-xl hover:bg-primary/90 transition-colors"
+          >
+            Contact Support
+          </a>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="bg-surface-container border-t border-outline-variant py-lg px-margin-mobile md:px-margin-desktop">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
@@ -135,9 +161,9 @@ export default function LandingPage() {
             Eventura
           </div>
           <div className="flex flex-wrap justify-center gap-6">
-            <a href="#" className="font-label-sm text-label-sm text-on-surface-variant hover:text-primary">Terms</a>
-            <a href="#" className="font-label-sm text-label-sm text-on-surface-variant hover:text-primary">Privacy</a>
-            <a href="#" className="font-label-sm text-label-sm text-on-surface-variant hover:text-primary">Support</a>
+            <a href="/terms" className="font-label-sm text-label-sm text-on-surface-variant hover:text-primary">Terms</a>
+            <a href="/privacy" className="font-label-sm text-label-sm text-on-surface-variant hover:text-primary">Privacy</a>
+            <a href="mailto:support@eventura.app" className="font-label-sm text-label-sm text-on-surface-variant hover:text-primary">Support</a>
           </div>
           <p className="font-label-sm text-label-sm text-on-surface-variant">© 2024 Eventura. Institutional Grade Event Management.</p>
         </div>

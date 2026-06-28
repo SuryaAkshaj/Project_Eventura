@@ -26,6 +26,7 @@ export const authApi = {
   refresh: () => apiClient.post('/auth/refresh'),
   getStatus: (userId?: string) =>
     apiClient.get('/auth/status', { params: userId ? { userId } : undefined }),
+  getMe: () => apiClient.get('/auth/me'),
   contextSwitch: (dto: { roleId: string; collegeId?: string | null; clubId?: string | null }) =>
     apiClient.post('/auth/context-switch', dto),
   forgotPassword: (email: string) => apiClient.post('/auth/forgot-password', { email }),

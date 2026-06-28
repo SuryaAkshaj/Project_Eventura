@@ -1,21 +1,33 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { orgApi } from "@/lib/api/org.api";
+import { useAuthStore } from "@/lib/store/authStore";
 
 type Tab = "profile" | "branding" | "bank";
 type BankStep = "form" | "verifying" | "verified";
 
 export default function OrgSettingsPage() {
+  const { activeRole } = useAuthStore();
   const [activeTab, setActiveTab] = useState<Tab>("profile");
 
-  // Org Profile state
-  const [orgName, setOrgName] = useState("State University Tech Society");
+  // Org Profile state — pre-filled from real API
+  const [orgName, setOrgName] = useState("");
+  const [orgDomain, setOrgDomain] = useState("");
   const [orgType, setOrgType] = useState("Student Club");
-  const [orgBio, setOrgBio] = useState("The premier technology and innovation student organisation at State University since 2015.");
+  const [orgBio, setOrgBio] = useState("");
+  const [website, setWebsite] = useState("");
+  const [address, setAddress] = useState("");
+  const [clubName, setClubName] = useState("");
+  const [clubDescription, setClubDescription] = useState("");
+  const [hasClub, setHasClub] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
+  const [profileError, setProfileError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
   // Branding state
   const [primaryColor, setPrimaryColor] = useState("#15157d");
@@ -27,6 +39,44 @@ export default function OrgSettingsPage() {
   const [accountHolder, setAccountHolder] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [ifsc, setIfsc] = useState("");
+
+  // Load real org data on mount
+  useEffect(() => {
+    orgApi.getMyOrg()
+      .then((res) => {
+        const { college, club } = res.data.data;
+        setOrgName(college.name ?? "");
+        setOrgDomain(college.domain ?? "");
+        setWebsite(college.website ?? "");
+        setAddress(college.address ?? "");
+        if (club) {
+          setHasClub(true);
+          setClubName(club.name ?? "");
+          setClubDescription(club.description ?? "");
+        }
+      })
+      .catch(console.error)
+      .finally(() => setIsLoadingProfile(false));
+  }, []);
+
+  const handleSaveProfile = async () => {
+    setIsSaving(true);
+    setProfileError("");
+    try {
+      await orgApi.updateMyOrg({
+        website: website || undefined,
+        address: address || undefined,
+        clubName: clubName || undefined,
+        clubDescription: clubDescription || undefined,
+      });
+      setProfileSaved(true);
+      setTimeout(() => setProfileSaved(false), 3000);
+    } catch (err: any) {
+      setProfileError(err.response?.data?.error?.message ?? "Failed to save settings");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleBankVerify = () => {
     setBankStep("verifying");
@@ -87,57 +137,130 @@ export default function OrgSettingsPage() {
                 <h2 className="font-title-md text-title-md text-on-surface">Organisation Profile</h2>
                 <p className="font-body-md text-body-md text-on-surface-variant mt-0.5">This information is shown on your public events page.</p>
               </div>
-              <div className="p-lg space-y-6">
-                {/* Logo Upload */}
-                <div className="flex items-center gap-5">
-                  <div className="w-20 h-20 rounded-xl bg-primary-container/20 border-2 border-dashed border-outline-variant flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-[32px] text-outline">add_photo_alternate</span>
-                  </div>
-                  <div>
-                    <p className="font-body-md text-on-surface font-semibold mb-1">Organisation Logo</p>
-                    <p className="font-label-sm text-label-sm text-on-surface-variant mb-3">PNG or SVG, max 2MB. Displayed on event pages and certificates.</p>
-                    <Button variant="outline" className="border-outline-variant text-on-surface-variant hover:bg-surface-variant h-9 px-4 font-label-sm text-label-sm">
-                      <span className="material-symbols-outlined text-[16px] mr-1.5">upload</span>
-                      Upload Logo
-                    </Button>
-                  </div>
+
+              {/* Success / Error banners */}
+              {profileSaved && (
+                <div className="mx-lg mt-lg p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                  Settings saved successfully
                 </div>
-                <Separator className="bg-outline-variant" />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-2">
-                    <Label htmlFor="org-name" className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Organisation Name</Label>
-                    <Input id="org-name" value={orgName} onChange={(e) => setOrgName(e.target.value)} className="border-outline-variant focus-visible:ring-primary" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Organisation Type</Label>
-                    <select value={orgType} onChange={(e) => setOrgType(e.target.value)} className="w-full h-10 px-3 border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:ring-2 focus:ring-primary/30">
-                      <option>Student Club</option>
-                      <option>Academic Department</option>
-                      <option>Administrative Office</option>
-                      <option>Inter-collegiate Group</option>
-                    </select>
-                  </div>
+              )}
+              {profileError && (
+                <div className="mx-lg mt-lg p-3 bg-error-container border border-error/30 rounded-lg text-on-error-container text-sm">
+                  {profileError}
                 </div>
-                <div className="space-y-2">
-                  <Label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Bio / Description</Label>
-                  <textarea value={orgBio} onChange={(e) => setOrgBio(e.target.value)} rows={4} className="w-full border border-outline-variant rounded-lg p-3 font-body-md text-body-md text-on-surface bg-surface resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
-                  <p className="font-label-sm text-label-sm text-on-surface-variant">{orgBio.length}/500 characters</p>
+              )}
+
+              {isLoadingProfile ? (
+                <div className="p-lg space-y-4 animate-pulse">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="h-10 bg-surface-container rounded-lg" />
+                  ))}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-2">
-                    <Label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Contact Email</Label>
-                    <Input type="email" defaultValue="techsociety@state.edu" className="border-outline-variant focus-visible:ring-primary" />
+              ) : (
+                <div className="p-lg space-y-6">
+                  {/* Logo Upload */}
+                  <div className="flex items-center gap-5">
+                    <div className="w-20 h-20 rounded-xl bg-primary-container/20 border-2 border-dashed border-outline-variant flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined text-[32px] text-outline">add_photo_alternate</span>
+                    </div>
+                    <div>
+                      <p className="font-body-md text-on-surface font-semibold mb-1">Organisation Logo</p>
+                      <p className="font-label-sm text-label-sm text-on-surface-variant mb-3">PNG or SVG, max 2MB. Displayed on event pages and certificates.</p>
+                      <Button variant="outline" className="border-outline-variant text-on-surface-variant hover:bg-surface-variant h-9 px-4 font-label-sm text-label-sm">
+                        <span className="material-symbols-outlined text-[16px] mr-1.5">upload</span>
+                        Upload Logo
+                      </Button>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Website URL</Label>
-                    <Input type="url" placeholder="https://yourclub.edu" className="border-outline-variant focus-visible:ring-primary" />
+                  <Separator className="bg-outline-variant" />
+
+                  {/* College info — name + domain are read-only */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="space-y-2">
+                      <Label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">College Name</Label>
+                      <Input id="org-name" value={orgName} readOnly className="border-outline-variant bg-surface-container-low text-on-surface-variant cursor-not-allowed" />
+                      <p className="font-label-sm text-label-sm text-on-surface-variant">Contact Super Admin to change</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Domain</Label>
+                      <Input value={orgDomain} readOnly className="border-outline-variant bg-surface-container-low text-on-surface-variant cursor-not-allowed" />
+                    </div>
                   </div>
+
+                  {/* Editable fields */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="space-y-2">
+                      <Label htmlFor="org-website" className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Website URL</Label>
+                      <Input
+                        id="org-website"
+                        type="url"
+                        value={website}
+                        onChange={(e) => setWebsite(e.target.value)}
+                        placeholder="https://yourcollege.edu.in"
+                        className="border-outline-variant focus-visible:ring-primary"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="org-address" className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Address</Label>
+                      <Input
+                        id="org-address"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        placeholder="College address"
+                        className="border-outline-variant focus-visible:ring-primary"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Club section — only for Club Presidents */}
+                  {hasClub && activeRole === "CLUB_PRESIDENT" && (
+                    <>
+                      <Separator className="bg-outline-variant" />
+                      <div>
+                        <p className="font-title-sm text-title-sm text-on-surface mb-4">Club Information</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                          <div className="space-y-2">
+                            <Label htmlFor="club-name" className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Club Name</Label>
+                            <Input
+                              id="club-name"
+                              value={clubName}
+                              onChange={(e) => setClubName(e.target.value)}
+                              placeholder="Club name"
+                              className="border-outline-variant focus-visible:ring-primary"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2 mt-4">
+                          <Label htmlFor="club-description" className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Club Description</Label>
+                          <textarea
+                            id="club-description"
+                            value={clubDescription}
+                            onChange={(e) => setClubDescription(e.target.value)}
+                            placeholder="Tell attendees about your club..."
+                            rows={3}
+                            className="w-full border border-outline-variant rounded-lg p-3 font-body-md text-body-md text-on-surface bg-surface resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
-              </div>
+              )}
+
               <div className="p-lg border-t border-outline-variant flex justify-end gap-3 bg-surface-container-lowest">
                 <Button variant="outline" className="border-outline-variant text-on-surface-variant">Reset</Button>
-                <Button id="save-profile-btn" onClick={() => { setProfileSaved(true); setTimeout(() => setProfileSaved(false), 3000); }} className="bg-primary text-on-primary hover:bg-primary/90">
-                  {profileSaved ? <><span className="material-symbols-outlined text-[16px] mr-1" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>Saved!</> : "Save Changes"}
+                <Button
+                  id="save-profile-btn"
+                  onClick={handleSaveProfile}
+                  disabled={isSaving || isLoadingProfile}
+                  className="bg-primary text-on-primary hover:bg-primary/90 disabled:opacity-60"
+                >
+                  {profileSaved
+                    ? <><span className="material-symbols-outlined text-[16px] mr-1" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>Saved!</>
+                    : isSaving ? "Saving..."
+                    : "Save Changes"
+                  }
                 </Button>
               </div>
             </div>

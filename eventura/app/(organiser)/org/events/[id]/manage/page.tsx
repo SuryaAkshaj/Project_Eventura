@@ -8,6 +8,7 @@ import { certificatesApi } from "@/lib/api/certificates.api";
 export default function LiveManagementHubPage() {
   const [event, setEvent] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
+  const [subEvents, setSubEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isBulkGenerating, setIsBulkGenerating] = useState(false);
   const [bulkResult, setBulkResult] = useState<any>(null);
@@ -22,6 +23,14 @@ export default function LiveManagementHubPage() {
         ]);
         setEvent(eventRes.data.data);
         setStats(statsRes.data.data);
+        // Fetch sub-events if this is a FEST
+        const ev = eventRes.data.data;
+        if (ev?.eventType === 'FEST') {
+          try {
+            const subRes = await eventsApi.getSubEvents(params.id as string);
+            setSubEvents(subRes.data.data);
+          } catch {}
+        }
       } catch (err) {
         console.error('Failed to fetch event data', err);
       } finally {
@@ -219,6 +228,45 @@ export default function LiveManagementHubPage() {
               </Link>
             ))}
           </section>
+
+          {/* Sub-events management — only for FEST */}
+          {!isLoading && event?.eventType === 'FEST' && (
+            <section className="bg-surface border border-outline-variant rounded-xl p-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-headline-md text-headline-md text-on-surface">Sub-Events</h2>
+                <Link
+                  href={`/org/events/create?parentId=${params.id}&parentTitle=${encodeURIComponent(event.title)}`}
+                  className="font-label-sm text-label-sm bg-primary text-on-primary px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-1"
+                >
+                  <span className="material-symbols-outlined text-[18px]">add</span>
+                  Add Competition / Workshop
+                </Link>
+              </div>
+              {subEvents.length === 0 ? (
+                <div className="bg-surface-container-low rounded-xl border border-dashed border-outline-variant p-6 text-center">
+                  <p className="text-on-surface-variant text-sm">No sub-events yet. Add competitions, workshops or seminars to this fest.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {subEvents.map((sub: any) => (
+                    <div key={sub.id} className="flex items-center justify-between p-3 bg-surface-container-low rounded-lg border border-outline-variant">
+                      <div className="flex items-center gap-2">
+                        <span>{sub.eventType === 'COMPETITION' ? '🏆' : sub.eventType === 'WORKSHOP' ? '🛠️' : '🎤'}</span>
+                        <p className="font-label-sm text-label-sm font-medium text-on-surface">{sub.title}</p>
+                        <span className="text-xs text-on-surface-variant">({sub._count?.registrations || 0} registered)</span>
+                      </div>
+                      <Link
+                        href={`/org/events/${sub.id}/manage`}
+                        className="text-xs text-primary hover:underline font-label-sm"
+                      >
+                        Manage →
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
         </div>
       </div>
     </div>

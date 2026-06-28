@@ -35,7 +35,8 @@ function LoginPageContent() {
       const { data } = res;
 
       if (res.status === 202 || data.requiresApproval) {
-        router.push('/signup/pending-approval');
+        const pendingUserId = data.data?.user?.id ?? '';
+        router.push(`/signup/pending-approval?userId=${pendingUserId}`);
         return;
       }
 

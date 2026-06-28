@@ -3,6 +3,7 @@ import "./globals.css";
 import { RoleProvider } from "@/lib/context/RoleContext";
 import QueryProvider from "@/lib/providers/QueryProvider";
 import PageTransition from "@/components/ui/PageTransition";
+import AuthInitializer from "@/components/auth/AuthInitializer";
 
 export const metadata: Metadata = {
   title: {
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-background text-on-surface font-body-md antialiased">
         <QueryProvider>
           <PageTransition />
+          <AuthInitializer />
           <RoleProvider>{children}</RoleProvider>
         </QueryProvider>
       </body>

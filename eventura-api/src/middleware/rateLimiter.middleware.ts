@@ -71,6 +71,17 @@ export const authRateLimiter = createRateLimiter({
 });
 
 /**
+ * Session endpoint rate limiter — 60 requests per minute per IP.
+ * Used for /auth/me and /auth/refresh which are called on every page load.
+ */
+export const sessionRateLimiter = createRateLimiter({
+  windowSeconds: 60,
+  maxRequests: 60,
+  keyPrefix: 'session',
+  keyExtractor: getIp,
+});
+
+/**
  * QR scan rate limiter — 30 scans per minute per Event Manager user ID
  */
 export const scanRateLimiter = createRateLimiter({

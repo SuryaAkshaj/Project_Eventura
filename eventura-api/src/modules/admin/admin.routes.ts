@@ -36,4 +36,7 @@ router.get('/audit', adminController.getAuditLog);
 // Multi-tenant health
 router.get('/health', adminController.getMultiTenantHealth);
 
+// Events
+router.get('/events', adminController.getAllEvents);
+
 export default router;

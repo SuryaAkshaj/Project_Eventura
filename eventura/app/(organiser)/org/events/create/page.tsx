@@ -1,11 +1,12 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { eventsApi } from "@/lib/api/events.api";
 import { useAuthStore } from "@/lib/store/authStore";
 
 type Step = 1 | 2 | 3 | 4 | 5;
+type EventType = 'FEST' | 'COMPETITION' | 'WORKSHOP' | 'SEMINAR' | 'OTHER';
 
 const steps = [
   { id: 1, label: "Basic Info" },
@@ -15,14 +16,61 @@ const steps = [
   { id: 5, label: "Checklist" },
 ];
 
-export default function EventCreatorWizardPage() {
+const typeConfig: Record<EventType, { icon: string; label: string; color: string; hoverBorder: string; checkColor: string; tags: string[]; examples: string[]; tagBg: string; tagText: string }> = {
+  FEST: {
+    icon: '🎪', label: 'Fest / Cultural Event', color: 'bg-indigo-50 text-indigo-700', hoverBorder: 'hover:border-indigo-400',
+    checkColor: 'text-indigo-400', tags: ['Multi-day', 'Sub-events', 'Accommodation', 'Sponsors'],
+    examples: ['Techfest, Mood Indigo, Saarang', 'Sports meets, Cultural nights', 'Has sub-events inside'],
+    tagBg: 'bg-indigo-50', tagText: 'text-indigo-600',
+  },
+  COMPETITION: {
+    icon: '🏆', label: 'Competition', color: 'bg-amber-50 text-amber-700', hoverBorder: 'hover:border-amber-400',
+    checkColor: 'text-amber-400', tags: ['Prize Pool', 'Team Size', 'Rules', 'Judging'],
+    examples: ['Hackathons, Debates, Case Studies', 'Coding contests, Robotics', 'Has prizes and team sizes'],
+    tagBg: 'bg-amber-50', tagText: 'text-amber-600',
+  },
+  WORKSHOP: {
+    icon: '🛠️', label: 'Workshop', color: 'bg-green-50 text-green-700', hoverBorder: 'hover:border-green-400',
+    checkColor: 'text-green-400', tags: ['Sessions', 'Certificate', 'Hands-on', 'Trainer'],
+    examples: ['AI/ML workshops, Design sprints', 'Coding bootcamps', 'Certificate provided'],
+    tagBg: 'bg-green-50', tagText: 'text-green-600',
+  },
+  SEMINAR: {
+    icon: '🎤', label: 'Seminar / Talk', color: 'bg-purple-50 text-purple-700', hoverBorder: 'hover:border-purple-400',
+    checkColor: 'text-purple-400', tags: ['Speaker', 'Q&A', 'Free entry', 'Networking'],
+    examples: ['Guest lectures, Panel discussions', 'Industry talks, TED-style', 'Usually free to attend'],
+    tagBg: 'bg-purple-50', tagText: 'text-purple-600',
+  },
+  OTHER: {
+    icon: '📅', label: 'Other Event', color: 'bg-gray-50 text-gray-700', hoverBorder: 'hover:border-gray-400',
+    checkColor: 'text-gray-400', tags: ['Flexible', 'General'],
+    examples: ['Any other type of event'],
+    tagBg: 'bg-gray-50', tagText: 'text-gray-600',
+  },
+};
+
+function EventCreatorWizardContent() {
   const [step, setStep] = useState<Step>(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [colleges, setColleges] = useState<any[]>([]);
   const [clubs, setClubs] = useState<any[]>([]);
+  const [stepErrors, setStepErrors] = useState<Record<string, string>>({});
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { collegeId } = useAuthStore();
+
+  // Event type state
+  const [eventType, setEventType] = useState<EventType | null>(null);
+  const [typeSelected, setTypeSelected] = useState(false);
+
+  // Derived helpers
+  const isFest = eventType === 'FEST';
+  const isCompetition = eventType === 'COMPETITION';
+
+  // Handle ?parentId query param (creating sub-event from fest manage page)
+  const parentId = searchParams.get('parentId');
+  const parentTitle = searchParams.get('parentTitle');
 
   const [formData, setFormData] = useState({
     title: "",
@@ -41,11 +89,35 @@ export default function EventCreatorWizardPage() {
     ticketPrice: "0",
     ticketName: "General Admission",
     selectedCollegeIds: [] as string[],
+    prizePool: "",
+    registrationDeadline: "",
+    teamSizeMin: "",
+    teamSizeMax: "",
+    parentEventId: "",
+    // Fest-specific
+    accommodation: false,
+    accommodationInfo: "",
+    guestPerformers: "",
+    sponsorNames: "",
+    festEdition: "",
+    // Competition-specific
+    competitionRules: "",
+    judgingCriteria: "",
+    submissionFormat: "",
   });
 
   const updateField = (key: string, value: string | boolean | string[]) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
   };
+
+  // If parentId in URL — skip type selector, default to COMPETITION, pre-fill parentEventId
+  useEffect(() => {
+    if (parentId) {
+      setEventType('COMPETITION');
+      setTypeSelected(true);
+      setFormData(p => ({ ...p, parentEventId: parentId }));
+    }
+  }, [parentId]);
 
   // Fetch clubs for organiser's college
   useEffect(() => {
@@ -72,11 +144,49 @@ export default function EventCreatorWizardPage() {
 
   const pctProgress = ((step - 1) / (steps.length - 1)) * 100;
 
+  // Per-step validation
+  const validateStep = (stepNumber: number): { valid: boolean; errors: Record<string, string> } => {
+    const errors: Record<string, string> = {};
+    if (stepNumber === 1) {
+      if (!formData.title?.trim()) errors.title = 'Event title is required';
+      else if (formData.title.trim().length < 3) errors.title = 'Title must be at least 3 characters';
+      if (!formData.description?.trim()) errors.description = 'Description is required';
+      if (!formData.category) errors.category = 'Please select a category';
+    }
+    if (stepNumber === 2) {
+      if (!formData.startDate) errors.startDate = 'Start date is required';
+      if (!formData.endDate) errors.endDate = 'End date is required';
+      if (formData.startDate && formData.endDate) {
+        if (new Date(formData.endDate) <= new Date(formData.startDate)) {
+          errors.endDate = 'End date must be after start date';
+        }
+      }
+      if (!formData.venue && !formData.onlineLink) {
+        errors.venue = 'Please provide a venue or online link';
+      }
+    }
+    if (stepNumber === 3) {
+      if (formData.ticketPrice === undefined || formData.ticketPrice === '') {
+        errors.ticketPrice = 'Please set a price (0 for free)';
+      }
+    }
+    return { valid: Object.keys(errors).length === 0, errors };
+  };
+
+  const handleContinue = () => {
+    const { valid, errors } = validateStep(step);
+    if (!valid) {
+      setStepErrors(errors);
+      return;
+    }
+    setStepErrors({});
+    setStep(s => Math.min(5, s + 1) as Step);
+  };
+
   const handleSubmit = async () => {
     setIsLoading(true);
     setError('');
     try {
-      // Build startDate and endDate ISO strings
       const startDateISO = formData.startDate && formData.startTime
         ? new Date(`${formData.startDate}T${formData.startTime}`).toISOString()
         : formData.startDate
@@ -102,8 +212,27 @@ export default function EventCreatorWizardPage() {
         endDate: endDateISO,
         maxCapacity: formData.maxCapacity ? Number(formData.maxCapacity) : undefined,
         ticketPrice: formData.ticketPrice ? Number(formData.ticketPrice) : 0,
+        registrationDeadline: formData.registrationDeadline
+          ? new Date(formData.registrationDeadline).toISOString()
+          : undefined,
         selectedCollegeIds: formData.selectedCollegeIds,
         sessions: [],
+        // Event type system
+        eventType: eventType || 'OTHER',
+        parentEventId: formData.parentEventId || undefined,
+        // Fest-specific
+        accommodation: isFest ? formData.accommodation : undefined,
+        accommodationInfo: isFest ? formData.accommodationInfo || undefined : undefined,
+        guestPerformers: isFest ? formData.guestPerformers || undefined : undefined,
+        sponsorNames: isFest ? formData.sponsorNames || undefined : undefined,
+        festEdition: isFest && formData.festEdition ? Number(formData.festEdition) : undefined,
+        // Competition-specific
+        prizePool: isCompetition && formData.prizePool ? Number(formData.prizePool) : undefined,
+        teamSizeMin: isCompetition && formData.teamSizeMin ? Number(formData.teamSizeMin) : undefined,
+        teamSizeMax: isCompetition && formData.teamSizeMax ? Number(formData.teamSizeMax) : undefined,
+        competitionRules: isCompetition ? formData.competitionRules || undefined : undefined,
+        judgingCriteria: isCompetition ? formData.judgingCriteria || undefined : undefined,
+        submissionFormat: isCompetition ? formData.submissionFormat || undefined : undefined,
       };
       const response = await eventsApi.createEvent(payload);
       const eventId = response.data.data.id;
@@ -116,6 +245,69 @@ export default function EventCreatorWizardPage() {
     }
   };
 
+  // ─── Event Type Selector Screen ───────────────────────────────────────────
+  if (!typeSelected) {
+    return (
+      <div className="bg-surface text-on-surface font-body-md min-h-screen flex flex-col">
+        <header className="bg-surface w-full px-margin-mobile md:px-margin-desktop h-16 flex items-center border-b border-outline-variant shrink-0">
+          <div className="flex items-center gap-md">
+            <span className="font-headline-md text-headline-md font-bold text-primary">Eventura</span>
+            <span className="text-on-surface-variant text-body-md font-body-md hidden sm:inline-block pl-4 border-l border-outline-variant">Event Creator</span>
+          </div>
+          <div className="ml-auto">
+            <Link href="/org/dashboard" className="text-on-surface-variant hover:text-primary transition-colors flex items-center gap-xs">
+              <span className="material-symbols-outlined text-[20px]">close</span>
+              <span className="font-label-sm text-label-sm uppercase hidden sm:inline-block">Exit Builder</span>
+            </Link>
+          </div>
+        </header>
+
+        <main className="flex-grow flex flex-col items-center justify-center py-xl px-margin-mobile md:px-margin-desktop bg-surface-container-low">
+          <div className="max-w-2xl w-full mx-auto">
+            <h1 className="text-2xl font-bold text-on-surface mb-2 text-center">What are you creating?</h1>
+            <p className="text-on-surface-variant text-center mb-8 font-body-md">
+              Choose the type of event to get a customised creation experience
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {(['FEST', 'COMPETITION', 'WORKSHOP', 'SEMINAR'] as EventType[]).map(type => {
+                const cfg = typeConfig[type];
+                return (
+                  <button
+                    key={type}
+                    id={`event-type-${type.toLowerCase()}`}
+                    onClick={() => { setEventType(type); setTypeSelected(true); }}
+                    className={`p-6 bg-surface border-2 border-outline-variant rounded-xl text-left ${cfg.hoverBorder} hover:shadow-md transition-all group`}
+                  >
+                    <div className="text-3xl mb-3">{cfg.icon}</div>
+                    <h3 className="text-lg font-bold text-on-surface group-hover:text-primary mb-1">{cfg.label}</h3>
+                    <div className="space-y-1 mb-3">
+                      {cfg.examples.map(t => (
+                        <p key={t} className={`text-xs text-on-surface-variant flex items-center gap-1`}>
+                          <span className={cfg.checkColor}>✓</span> {t}
+                        </p>
+                      ))}
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {cfg.tags.map(tag => (
+                        <span key={tag} className={`text-xs ${cfg.tagBg} ${cfg.tagText} px-2 py-0.5 rounded-full`}>{tag}</span>
+                      ))}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </main>
+
+        <footer className="bg-surface border-t border-outline-variant py-md px-margin-mobile text-center">
+          <p className="font-label-sm text-label-sm text-on-surface-variant">© 2024 Eventura. Institutional Grade Event Management.</p>
+        </footer>
+      </div>
+    );
+  }
+
+  // ─── Main Wizard (after type is selected) ────────────────────────────────
   return (
     <div className="bg-surface text-on-surface font-body-md min-h-screen flex flex-col">
       {/* Minimal Header */}
@@ -133,6 +325,28 @@ export default function EventCreatorWizardPage() {
       </header>
 
       <main className="flex-grow flex flex-col items-center py-xl px-margin-mobile md:px-margin-desktop bg-surface-container-low">
+        {/* Type indicator + change type */}
+        <div className="w-full max-w-3xl flex items-center gap-2 mb-4">
+          {!parentId && (
+            <button
+              onClick={() => { setTypeSelected(false); setEventType(null); }}
+              className="text-sm text-on-surface-variant hover:text-on-surface flex items-center gap-1"
+            >
+              ← Change type
+            </button>
+          )}
+          {eventType && (
+            <span className={`text-sm font-medium px-3 py-1 rounded-full ${typeConfig[eventType].color}`}>
+              {typeConfig[eventType].icon} {typeConfig[eventType].label}
+            </span>
+          )}
+          {parentId && parentTitle && (
+            <span className="text-sm text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-full">
+              Adding to: <strong>{decodeURIComponent(parentTitle)}</strong>
+            </span>
+          )}
+        </div>
+
         {/* Stepper */}
         <div className="w-full max-w-4xl mb-xl">
           <div className="flex items-center justify-between relative">
@@ -165,12 +379,37 @@ export default function EventCreatorWizardPage() {
               <div className="p-lg flex flex-col gap-lg bg-surface">
                 <div className="flex flex-col gap-xs">
                   <label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide" htmlFor="event-title">Event Title <span className="text-error">*</span></label>
-                  <input id="event-title" type="text" placeholder="e.g., Annual Tech Symposium 2026" value={formData.title} onChange={(e) => updateField("title", e.target.value)} className="w-full h-10 px-md border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-outline" />
+                  <input
+                    id="event-title"
+                    type="text"
+                    placeholder="e.g., Annual Tech Symposium 2026"
+                    value={formData.title}
+                    onChange={(e) => {
+                      updateField("title", e.target.value);
+                      if (stepErrors.title) setStepErrors(p => ({ ...p, title: '' }));
+                    }}
+                    className={`w-full h-10 px-md border rounded-lg font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:ring-1 placeholder:text-outline ${
+                      stepErrors.title ? 'border-red-400 focus:border-red-400 focus:ring-red-400' : 'border-outline-variant focus:border-primary focus:ring-primary'
+                    }`}
+                  />
+                  {stepErrors.title && (
+                    <p className="text-xs text-red-500 mt-0.5 flex items-center gap-1"><span>⚠</span> {stepErrors.title}</p>
+                  )}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-lg">
                   <div className="flex flex-col gap-xs">
                     <label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide" htmlFor="event-category">Category <span className="text-error">*</span></label>
-                    <select id="event-category" value={formData.category} onChange={(e) => updateField("category", e.target.value)} className="w-full h-10 px-md border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary">
+                    <select
+                      id="event-category"
+                      value={formData.category}
+                      onChange={(e) => {
+                        updateField("category", e.target.value);
+                        if (stepErrors.category) setStepErrors(p => ({ ...p, category: '' }));
+                      }}
+                      className={`w-full h-10 px-md border rounded-lg font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:ring-1 ${
+                        stepErrors.category ? 'border-red-400 focus:border-red-400 focus:ring-red-400' : 'border-outline-variant focus:border-primary focus:ring-primary'
+                      }`}
+                    >
                       <option value="">Select Category</option>
                       <option value="Technical">Technical</option>
                       <option value="Cultural">Cultural</option>
@@ -181,6 +420,9 @@ export default function EventCreatorWizardPage() {
                       <option value="Career">Career</option>
                       <option value="Social">Social</option>
                     </select>
+                    {stepErrors.category && (
+                      <p className="text-xs text-red-500 mt-0.5 flex items-center gap-1"><span>⚠</span> {stepErrors.category}</p>
+                    )}
                   </div>
                   <div className="flex flex-col gap-xs">
                     <label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide" htmlFor="event-club">Club (Optional)</label>
@@ -194,7 +436,21 @@ export default function EventCreatorWizardPage() {
                 </div>
                 <div className="flex flex-col gap-xs">
                   <label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Description <span className="text-error">*</span></label>
-                  <textarea rows={5} placeholder="Provide a comprehensive overview of the event..." value={formData.description} onChange={(e) => updateField("description", e.target.value)} className="w-full p-md border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary resize-y placeholder:text-outline"></textarea>
+                  <textarea
+                    rows={5}
+                    placeholder="Provide a comprehensive overview of the event..."
+                    value={formData.description}
+                    onChange={(e) => {
+                      updateField("description", e.target.value);
+                      if (stepErrors.description) setStepErrors(p => ({ ...p, description: '' }));
+                    }}
+                    className={`w-full p-md border rounded-lg font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:ring-1 resize-y placeholder:text-outline ${
+                      stepErrors.description ? 'border-red-400 focus:border-red-400 focus:ring-red-400' : 'border-outline-variant focus:border-primary focus:ring-primary'
+                    }`}
+                  />
+                  {stepErrors.description && (
+                    <p className="text-xs text-red-500 mt-0.5 flex items-center gap-1"><span>⚠</span> {stepErrors.description}</p>
+                  )}
                 </div>
                 <div className="flex flex-col gap-md pt-sm border-t border-outline-variant">
                   <label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Visibility & Access</label>
@@ -219,7 +475,6 @@ export default function EventCreatorWizardPage() {
                     ))}
                   </div>
 
-                  {/* College multi-select for SELECTED_COLLEGES */}
                   {formData.visibility === 'SELECTED_COLLEGES' && colleges.length > 0 && (
                     <div className="flex flex-col gap-xs mt-2">
                       <label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Select Colleges</label>
@@ -268,7 +523,21 @@ export default function EventCreatorWizardPage() {
                   </div>
                   <div className="flex flex-col gap-xs">
                     <label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Venue / Location <span className="text-error">*</span></label>
-                    <input type="text" placeholder="e.g., Main Auditorium" value={formData.venue} onChange={(e) => updateField("venue", e.target.value)} className="w-full h-10 px-md border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary placeholder:text-outline" />
+                    <input
+                      type="text"
+                      placeholder="e.g., Main Auditorium"
+                      value={formData.venue}
+                      onChange={(e) => {
+                        updateField("venue", e.target.value);
+                        if (stepErrors.venue) setStepErrors(p => ({ ...p, venue: '' }));
+                      }}
+                      className={`w-full h-10 px-md border rounded-lg font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:ring-1 placeholder:text-outline ${
+                        stepErrors.venue ? 'border-red-400 focus:border-red-400 focus:ring-red-400' : 'border-outline-variant focus:border-primary focus:ring-primary'
+                      }`}
+                    />
+                    {stepErrors.venue && (
+                      <p className="text-xs text-red-500 mt-0.5 flex items-center gap-1"><span>⚠</span> {stepErrors.venue}</p>
+                    )}
                   </div>
                   {(formData.format === 'Online' || formData.format === 'Hybrid') && (
                     <div className="flex flex-col gap-xs md:col-span-2">
@@ -278,7 +547,20 @@ export default function EventCreatorWizardPage() {
                   )}
                   <div className="flex flex-col gap-xs">
                     <label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Start Date <span className="text-error">*</span></label>
-                    <input type="date" value={formData.startDate} onChange={(e) => updateField("startDate", e.target.value)} className="w-full h-10 px-md border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary" />
+                    <input
+                      type="date"
+                      value={formData.startDate}
+                      onChange={(e) => {
+                        updateField("startDate", e.target.value);
+                        if (stepErrors.startDate) setStepErrors(p => ({ ...p, startDate: '' }));
+                      }}
+                      className={`w-full h-10 px-md border rounded-lg font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:ring-1 ${
+                        stepErrors.startDate ? 'border-red-400 focus:border-red-400 focus:ring-red-400' : 'border-outline-variant focus:border-primary focus:ring-primary'
+                      }`}
+                    />
+                    {stepErrors.startDate && (
+                      <p className="text-xs text-red-500 mt-0.5 flex items-center gap-1"><span>⚠</span> {stepErrors.startDate}</p>
+                    )}
                   </div>
                   <div className="flex flex-col gap-xs">
                     <label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Start Time</label>
@@ -286,7 +568,20 @@ export default function EventCreatorWizardPage() {
                   </div>
                   <div className="flex flex-col gap-xs">
                     <label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">End Date <span className="text-error">*</span></label>
-                    <input type="date" value={formData.endDate} onChange={(e) => updateField("endDate", e.target.value)} className="w-full h-10 px-md border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary" />
+                    <input
+                      type="date"
+                      value={formData.endDate}
+                      onChange={(e) => {
+                        updateField("endDate", e.target.value);
+                        if (stepErrors.endDate) setStepErrors(p => ({ ...p, endDate: '' }));
+                      }}
+                      className={`w-full h-10 px-md border rounded-lg font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:ring-1 ${
+                        stepErrors.endDate ? 'border-red-400 focus:border-red-400 focus:ring-red-400' : 'border-outline-variant focus:border-primary focus:ring-primary'
+                      }`}
+                    />
+                    {stepErrors.endDate && (
+                      <p className="text-xs text-red-500 mt-0.5 flex items-center gap-1"><span>⚠</span> {stepErrors.endDate}</p>
+                    )}
                   </div>
                   <div className="flex flex-col gap-xs">
                     <label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">End Time</label>
@@ -296,7 +591,131 @@ export default function EventCreatorWizardPage() {
                     <label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Capacity <span className="text-error">*</span></label>
                     <input type="number" placeholder="e.g., 350" min="1" value={formData.maxCapacity} onChange={(e) => updateField("maxCapacity", e.target.value)} className="w-full h-10 px-md border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary placeholder:text-outline" />
                   </div>
+
+                  {/* Registration Deadline */}
+                  <div className="flex flex-col gap-xs">
+                    <label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Registration Deadline</label>
+                    <input
+                      type="datetime-local"
+                      value={formData.registrationDeadline}
+                      onChange={(e) => updateField("registrationDeadline", e.target.value)}
+                      className="w-full h-10 px-md border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary"
+                    />
+                    <p className="text-xs text-on-surface-variant">Leave blank to use event start date as deadline</p>
+                  </div>
+
+                  {/* Prize Pool — only for COMPETITION */}
+                  {isCompetition && (
+                    <div className="flex flex-col gap-xs">
+                      <label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Total Prize Pool (₹)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.prizePool}
+                        onChange={(e) => updateField("prizePool", e.target.value)}
+                        placeholder="e.g. 50000"
+                        className="w-full h-10 px-md border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary placeholder:text-outline"
+                      />
+                    </div>
+                  )}
+
+                  {/* Team Size — only for COMPETITION */}
+                  {isCompetition && (
+                    <>
+                      <div className="flex flex-col gap-xs">
+                        <label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Min Team Size</label>
+                        <input type="number" min="1" value={formData.teamSizeMin} onChange={(e) => updateField("teamSizeMin", e.target.value)} placeholder="1" className="w-full h-10 px-md border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary placeholder:text-outline" />
+                      </div>
+                      <div className="flex flex-col gap-xs">
+                        <label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Max Team Size</label>
+                        <input type="number" min="1" value={formData.teamSizeMax} onChange={(e) => updateField("teamSizeMax", e.target.value)} placeholder="4" className="w-full h-10 px-md border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary placeholder:text-outline" />
+                      </div>
+                    </>
+                  )}
                 </div>
+
+                {/* Competition-specific fields */}
+                {isCompetition && (
+                  <div className="flex flex-col gap-lg border-t border-outline-variant pt-lg">
+                    <div className="flex flex-col gap-xs">
+                      <label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Rules & Regulations</label>
+                      <textarea
+                        value={formData.competitionRules}
+                        onChange={(e) => updateField("competitionRules", e.target.value)}
+                        rows={4}
+                        placeholder="Enter competition rules, eligibility criteria, submission guidelines..."
+                        className="w-full p-md border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary resize-y placeholder:text-outline"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-xs">
+                      <label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Judging Criteria</label>
+                      <textarea
+                        value={formData.judgingCriteria}
+                        onChange={(e) => updateField("judgingCriteria", e.target.value)}
+                        rows={3}
+                        placeholder="How will entries be judged?"
+                        className="w-full p-md border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary resize-y placeholder:text-outline"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-xs">
+                      <label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Submission Format</label>
+                      <input
+                        type="text"
+                        value={formData.submissionFormat}
+                        onChange={(e) => updateField("submissionFormat", e.target.value)}
+                        placeholder="e.g., GitHub repo + 2-page PDF writeup"
+                        className="w-full h-10 px-md border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary placeholder:text-outline"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Fest-specific fields */}
+                {isFest && (
+                  <div className="flex flex-col gap-lg border-t border-outline-variant pt-lg">
+                    <div className="flex flex-col gap-xs">
+                      <label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Fest Edition (Optional)</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={formData.festEdition}
+                        onChange={(e) => updateField("festEdition", e.target.value)}
+                        placeholder="e.g. 15 for '15th Edition'"
+                        className="w-full h-10 px-md border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary placeholder:text-outline"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-xs">
+                      <label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Guest Performers / Speakers (Optional)</label>
+                      <input
+                        type="text"
+                        value={formData.guestPerformers}
+                        onChange={(e) => updateField("guestPerformers", e.target.value)}
+                        placeholder="e.g. Arijit Singh, Zakir Khan (comma separated)"
+                        className="w-full h-10 px-md border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary placeholder:text-outline"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-xs">
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.accommodation}
+                          onChange={(e) => updateField("accommodation", e.target.checked)}
+                          className="w-4 h-4 text-primary rounded"
+                        />
+                        <span className="text-sm font-medium text-on-surface">Accommodation available for outstation participants</span>
+                      </label>
+                      {formData.accommodation && (
+                        <textarea
+                          value={formData.accommodationInfo}
+                          onChange={(e) => updateField("accommodationInfo", e.target.value)}
+                          rows={2}
+                          placeholder="Describe accommodation arrangements, cost, booking process..."
+                          className="mt-2 w-full p-md border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary resize-y placeholder:text-outline"
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -341,6 +760,7 @@ export default function EventCreatorWizardPage() {
               </div>
               <div className="p-lg flex flex-col gap-md bg-surface">
                 {[
+                  { label: "Event Type", value: eventType ? `${typeConfig[eventType].icon} ${typeConfig[eventType].label}` : 'Not set' },
                   { label: "Title", value: formData.title || "Not set" },
                   { label: "Category", value: formData.category || "Not set" },
                   { label: "Club", value: clubs.find(c => c.id === formData.clubId)?.name || "None" },
@@ -351,6 +771,8 @@ export default function EventCreatorWizardPage() {
                   { label: "Capacity", value: formData.maxCapacity || "Not set" },
                   { label: "Ticket Price", value: `₹${formData.ticketPrice}` },
                   { label: "Visibility", value: formData.visibility },
+                  ...(isCompetition && formData.prizePool ? [{ label: "Prize Pool", value: `₹${formData.prizePool}` }] : []),
+                  ...(isFest && formData.festEdition ? [{ label: "Fest Edition", value: `${formData.festEdition}th Edition` }] : []),
                 ].map((field) => (
                   <div key={field.label} className="flex justify-between py-2 border-b border-outline-variant/50">
                     <span className="font-label-sm text-label-sm text-on-surface-variant uppercase">{field.label}</span>
@@ -409,7 +831,7 @@ export default function EventCreatorWizardPage() {
               {step < 5 ? (
                 <button
                   id="wizard-next-btn"
-                  onClick={() => setStep((prev) => Math.min(5, prev + 1) as Step)}
+                  onClick={handleContinue}
                   className="w-full sm:w-auto h-10 px-lg bg-primary text-on-primary font-label-sm text-label-sm uppercase rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-sm"
                 >
                   Continue
@@ -435,5 +857,13 @@ export default function EventCreatorWizardPage() {
         <p className="font-label-sm text-label-sm text-on-surface-variant">© 2024 Eventura. Institutional Grade Event Management.</p>
       </footer>
     </div>
+  );
+}
+
+export default function EventCreatorWizardPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-surface-container-low flex items-center justify-center"><p className="text-on-surface-variant">Loading...</p></div>}>
+      <EventCreatorWizardContent />
+    </Suspense>
   );
 }

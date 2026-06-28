@@ -74,9 +74,10 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response) => 
     apiError(res, 'MISSING_REFRESH_TOKEN', 'No refresh token provided', undefined, 401);
     return;
   }
-  const tokenPair = await authService.refreshToken(token);
-  res.cookie('eventura_refresh', tokenPair.refreshToken, COOKIE_OPTIONS);
-  success(res, { accessToken: tokenPair.accessToken });
+  const result = await authService.refreshToken(token);
+  res.cookie('eventura_refresh', result.refreshToken, COOKIE_OPTIONS);
+  // Return activeContext alongside accessToken so the frontend can rebuild its auth store
+  success(res, { accessToken: result.accessToken, activeContext: result.activeContext });
 });
 
 // POST /auth/logout
@@ -84,9 +85,10 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
   const authHeader = req.headers.authorization;
   const accessToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : '';
   const userId = (req as any).user?.sub ?? req.body?.userId;
+  const refreshToken = req.cookies?.eventura_refresh;
 
   if (userId) {
-    await authService.logout(userId, accessToken);
+    await authService.logout(userId, accessToken, refreshToken);
   }
 
   res.clearCookie('eventura_refresh', { path: '/' });
@@ -129,4 +131,11 @@ export const resetPassword = asyncHandler(async (req: Request, res: Response) =>
   const { userId, otp, newPassword } = resetPasswordSchema.parse(req.body);
   await authService.resetPassword(userId, otp, newPassword);
   success(res, null, 'Password reset successfully');
+});
+
+// GET /auth/me — returns current user profile (requires valid JWT)
+export const getMe = asyncHandler(async (req: Request, res: Response) => {
+  const userId = (req as any).user!.sub;
+  const user = await authService.getMe(userId);
+  success(res, user);
 });

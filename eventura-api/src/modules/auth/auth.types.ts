@@ -18,6 +18,7 @@ export interface LoginDto {
 export interface JwtPayload {
   sub: string;             // userId
   email: string;
+  jti: string;             // Unique token ID for blacklisting on logout
   activeContext: {
     role: string;
     collegeId: string | null;

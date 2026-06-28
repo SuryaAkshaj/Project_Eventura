@@ -2,6 +2,7 @@ import Razorpay from 'razorpay';
 import * as crypto from 'crypto';
 import { prismaAdmin } from '@config/database';
 import { env } from '@config/env';
+import { AppError } from '@shared/errors/AppError';
 
 const razorpay = new Razorpay({
   key_id: env.RAZORPAY_KEY_ID,
@@ -21,9 +22,9 @@ export async function createOrder(registrationId: string, userId: string) {
     },
   });
 
-  if (!registration) throw { code: 'NOT_FOUND', message: 'Registration not found', status: 404 };
-  if (registration.event.isFree) throw { code: 'FREE_EVENT', message: 'This event is free', status: 400 };
-  if (!registration.payment) throw { code: 'NO_PAYMENT', message: 'No payment record found', status: 400 };
+  if (!registration) throw AppError.notFound('Registration not found');
+  if (registration.event.isFree) throw AppError.badRequest('This event is free');
+  if (!registration.payment) throw AppError.badRequest('No payment record found');
 
   // 2. If already paid return early
   if (registration.payment.status === 'PAID') {
@@ -89,7 +90,7 @@ export async function verifyPayment(
     .digest('hex');
 
   if (expectedSignature !== razorpaySignature) {
-    throw { code: 'INVALID_SIGNATURE', message: 'Payment verification failed', status: 400 };
+    throw new AppError('INVALID_SIGNATURE', 'Payment verification failed', 400);
   }
 
   // 2. Get registration
@@ -98,7 +99,7 @@ export async function verifyPayment(
     include: { payment: true },
   });
 
-  if (!registration) throw { code: 'NOT_FOUND', message: 'Registration not found', status: 404 };
+  if (!registration) throw AppError.notFound('Registration not found');
   if (registration.payment?.status === 'PAID') {
     return { alreadyVerified: true };
   }
@@ -166,7 +167,7 @@ export async function handleWebhook(rawBody: string, signature: string) {
     .digest('hex');
 
   if (expectedSignature !== signature) {
-    throw { code: 'INVALID_SIGNATURE', message: 'Invalid webhook signature', status: 400 };
+    throw new AppError('INVALID_SIGNATURE', 'Invalid webhook signature', 400);
   }
 
   const event = JSON.parse(rawBody);

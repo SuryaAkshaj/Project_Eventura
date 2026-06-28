@@ -67,6 +67,14 @@ enum ScanResult {
   EXPIRED
 }
 
+enum EventType {
+  FEST
+  COMPETITION
+  WORKSHOP
+  SEMINAR
+  OTHER
+}
+
 // ============================================================================
 // GLOBAL TABLES (no collegeId — platform-level data)
 // ============================================================================
@@ -89,6 +97,7 @@ model User {
   registrations   Registration[]
   scanLogs        ScanLog[]
   auditLogs       AuditLog[]
+  bookmarks       Bookmark[]
 
   @@index([email])
 }
@@ -98,9 +107,20 @@ model College {
   name           String
   domain         String         @unique     // e.g. "woxsen.edu.in" for Google OAuth detection
   logoUrl        String?
+  coverImageUrl  String?                           // hero image for college page
   brandingColor  String?        @default("#2E3192")
   website        String?
   address        String?
+  city           String?                           // city name
+  state          String?                           // Indian state
+  phone          String?                           // contact phone
+  instagram      String?                           // instagram handle
+  description    String?                           // about the college
+  type           String?                           // IIT/NIT/IIIT/IIM/Private/Government/Deemed
+  slug           String?        @unique            // URL slug e.g. "woxsen-university"
+  totalStudents  Int?                              // approximate student count
+  establishedYear Int?                             // year established
+  isSeeded       Boolean        @default(false)    // marks pre-seeded colleges
   approvalStatus ApprovalStatus @default(PENDING)
   approvedAt     DateTime?
   approvedBy     String?        @db.Uuid    // Super Admin userId who approved
@@ -115,6 +135,10 @@ model College {
 
   @@index([domain])
   @@index([approvalStatus])
+  @@index([slug])
+  @@index([city])
+  @@index([state])
+  @@index([type])
 }
 
 model Role {
@@ -198,24 +222,54 @@ model Event {
   timezone       String          @default("Asia/Kolkata")
   maxCapacity    Int?
   isMultiDay     Boolean         @default(false)
-  ticketPrice    Decimal         @default(0)         @db.Decimal(10, 2)
-  isFree         Boolean         @default(true)
-  readinessScore Int?                                // Pre-flight checklist score 0-100
-  publishedAt    DateTime?
-  cancelledAt    DateTime?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+
+  // Event type system
+  eventType          EventType       @default(OTHER)
+  parentEventId      String?         @db.Uuid      // For sub-events — points to parent Fest
+  parentEvent        Event?          @relation("SubEvents", fields: [parentEventId], references: [id], onDelete: Cascade)
+  subEvents          Event[]         @relation("SubEvents")
+
+  // Fest-specific fields
+  accommodation      Boolean         @default(false)  // Does fest offer accommodation?
+  accommodationInfo  String?                          // Details about accommodation
+  guestPerformers    String?                          // Comma-separated or JSON
+  sponsorNames       String?                          // Comma-separated sponsor names
+  festEdition        Int?                             // e.g. 15 for "15th edition"
+
+  // Competition-specific fields
+  competitionRules   String?                          // Rules and regulations
+  judgingCriteria    String?                          // How entries are judged
+  submissionFormat   String?                          // What participants submit
+
+  ticketPrice            Decimal         @default(0)         @db.Decimal(10, 2)
+  isFree                 Boolean         @default(true)
+  prizePool              Decimal?        @db.Decimal(12, 2)  // Total prize money in INR
+  registrationDeadline   DateTime?                           // Separate from event start date
+  teamSizeMin            Int?                                // Minimum team size
+  teamSizeMax            Int?                                // Maximum team size
+  contactEmail           String?                             // Organiser contact
+  contactPhone           String?                             // Organiser contact phone
+  readinessScore         Int?                                // Pre-flight checklist score 0-100
+  publishedAt            DateTime?
+  cancelledAt            DateTime?
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
 
   sessions      EventSession[]
   registrations Registration[]
   sharedWith    SharedEvent[]
   feedback      EventFeedback[]
   auditLogs     AuditLog[]
+  bookmarks     Bookmark[]
 
   @@index([collegeId])
   @@index([status])
   @@index([startDate])
   @@index([visibility])
+  @@index([registrationDeadline])
+  @@index([prizePool])
+  @@index([parentEventId])
+  @@index([eventType])
 }
 
 model EventSession {
@@ -351,6 +405,19 @@ model EventFeedback {
   createdAt DateTime @default(now())
 
   @@unique([eventId, userId])
+  @@index([eventId])
+}
+
+model Bookmark {
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId   String   @db.Uuid
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, eventId])
+  @@index([userId])
   @@index([eventId])
 }
 

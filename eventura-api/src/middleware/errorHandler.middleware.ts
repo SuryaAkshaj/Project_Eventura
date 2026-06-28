@@ -3,19 +3,36 @@ import { Prisma } from '@prisma/client';
 import { ZodError } from 'zod';
 import { error } from '@shared/utils/apiResponse';
 import { logger } from '@shared/utils/logger';
+import { AppError } from '@shared/errors/AppError';
 
-interface AppError extends Error {
+interface LegacyAppError extends Error {
   statusCode?: number;
   status?: number;
   code?: string;
 }
 
-export function errorHandler(err: AppError, req: Request, res: Response, next: NextFunction): void {
+export function errorHandler(err: LegacyAppError, req: Request, res: Response, next: NextFunction): void {
   // Log the error with request context
   logger.error(`[${req.requestId ?? 'no-id'}] ${req.method} ${req.path} — ${err.message}`, {
     stack: err.stack,
     body: req.body,
   });
+
+  const isDev = process.env.NODE_ENV === 'development';
+
+  // AppError — structured application error (must be first)
+  if (err instanceof AppError) {
+    res.status(err.status).json({
+      success: false,
+      error: {
+        code: err.code,
+        message: err.message,
+        ...(err.details && { details: err.details }),
+        ...(isDev && { stack: err.stack }),
+      }
+    });
+    return;
+  }
 
   // Zod validation errors
   if (err instanceof ZodError) {
@@ -76,7 +93,6 @@ export function errorHandler(err: AppError, req: Request, res: Response, next: N
   }
 
   // Unknown errors — don't expose internals in production
-  const isDev = process.env.NODE_ENV === 'development';
   error(
     res,
     'INTERNAL_ERROR',

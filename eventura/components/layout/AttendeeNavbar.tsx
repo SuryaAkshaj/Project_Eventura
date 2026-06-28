@@ -73,6 +73,7 @@ export default function AttendeeNavbar() {
           <div className="flex items-center gap-1 border-l border-outline-variant pl-3">
             <button
               id="nav-notifications-btn"
+              onClick={() => alert('Notifications coming soon!')}
               className="text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full hover:bg-surface-variant relative"
             >
               <span className="material-symbols-outlined text-[22px]">notifications</span>
@@ -80,7 +81,9 @@ export default function AttendeeNavbar() {
             </button>
             <button
               id="nav-help-btn"
+              onClick={() => window.open('mailto:support@eventura.app', '_blank')}
               className="text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full hover:bg-surface-variant"
+              title="Contact Support"
             >
               <span className="material-symbols-outlined text-[22px]">help_outline</span>
             </button>

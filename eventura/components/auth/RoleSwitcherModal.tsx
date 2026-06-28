@@ -45,6 +45,9 @@ export default function RoleSwitcherModal({ roles, user, onClose }: Props) {
         clubId: role.clubId,
       });
 
+      // Set the middleware cookie so Next.js doesn't bounce on the next navigation
+      document.cookie = `eventura-auth=${accessToken}; path=/; max-age=${15 * 60}; SameSite=Lax`;
+
       if (role.role === 'ATTENDEE') router.push('/dashboard');
       else if (['COLLEGE_ADMIN', 'CLUB_PRESIDENT', 'EVENT_MANAGER'].includes(role.role)) router.push('/org/dashboard');
       else if (role.role === 'SUPER_ADMIN') router.push('/admin/dashboard');

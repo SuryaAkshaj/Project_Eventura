@@ -1,55 +1,185 @@
 'use client';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/lib/store/authStore';
+import apiClient from '@/lib/api/client';
+import { ShimmerLine } from '@/components/ui/Shimmer';
+import Link from 'next/link';
 
 export default function ProfilePage() {
-  const { user, activeRole, collegeId } = useAuthStore();
+  const { user, activeRole } = useAuthStore();
+  const [profile, setProfile] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  return (
-    <div className="flex-grow w-full max-w-2xl mx-auto px-margin-mobile md:px-margin-desktop py-xl">
-      <h1 className="font-display-lg text-display-lg text-on-surface mb-6">My Profile</h1>
-      <div className="bg-surface border border-outline-variant rounded-xl shadow-sm overflow-hidden">
-        {/* Avatar header */}
-        <div className="bg-gradient-to-br from-primary to-secondary-container h-28 relative" />
-        <div className="px-6 pb-6">
-          <div className="flex items-end gap-4 -mt-10 mb-4">
-            <div className="w-20 h-20 rounded-full bg-primary-container border-4 border-surface flex items-center justify-center shrink-0">
-              {user?.avatarUrl ? (
-                <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover rounded-full" />
-              ) : (
-                <span className="material-symbols-outlined text-[36px] text-on-primary-container" style={{ fontVariationSettings: "'FILL' 1" }}>
-                  person
-                </span>
-              )}
+  useEffect(() => {
+    apiClient.get('/auth/me')
+      .then(res => setProfile(res.data.data))
+      .catch(() => {
+        if (user) setProfile(user);
+        else setError('Failed to load profile');
+      })
+      .finally(() => setIsLoading(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (isLoading) {
+    return (
+      <div className="p-6 max-w-3xl mx-auto">
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+          <div className="h-36 bg-gray-200 animate-pulse" />
+          <div className="px-6 pb-6">
+            <div className="flex items-end gap-4 -mt-10 mb-6">
+              <div className="w-20 h-20 rounded-full bg-gray-300 animate-pulse border-4 border-white" />
+              <div className="pb-1 space-y-2 flex-1">
+                <ShimmerLine className="h-6 w-48" />
+                <ShimmerLine className="h-4 w-32" />
+              </div>
             </div>
-            <div className="pb-2">
-              <h2 className="font-title-lg text-title-lg text-on-surface">
-                {user?.firstName} {user?.lastName}
-              </h2>
-              <p className="font-body-md text-on-surface-variant">{activeRole}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="bg-gray-50 rounded-xl p-4 space-y-2">
+                  <ShimmerLine className="h-3 w-20" />
+                  <ShimmerLine className="h-5 w-40" />
+                </div>
+              ))}
             </div>
           </div>
+        </div>
+      </div>
+    );
+  }
 
-          <div className="space-y-4">
-            <div className="p-4 bg-surface-container-low rounded-lg border border-outline-variant">
-              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider block mb-1">Email</label>
-              <p className="font-body-md text-on-surface">{user?.email}</p>
+  if (error) {
+    return (
+      <div className="p-6 max-w-3xl mx-auto text-center py-20">
+        <p className="text-red-500 mb-4">{error}</p>
+        <button onClick={() => window.location.reload()} className="text-indigo-600 hover:underline text-sm">
+          Try again
+        </button>
+      </div>
+    );
+  }
+
+  const initials = `${profile?.firstName?.[0] || ''}${profile?.lastName?.[0] || ''}`.toUpperCase() || '?';
+  const fullName = `${profile?.firstName || ''} ${profile?.lastName || ''}`.trim() || 'User';
+  const roleDisplay = (activeRole ?? 'ATTENDEE').replace(/_/g, ' ');
+  const roleColor: Record<string, string> = {
+    'SUPER ADMIN': 'text-purple-600',
+    'COLLEGE ADMIN': 'text-blue-600',
+    'CLUB PRESIDENT': 'text-indigo-600',
+    'EVENT MANAGER': 'text-amber-600',
+    'ATTENDEE': 'text-green-600',
+  };
+
+  return (
+    <div className="p-6 max-w-3xl mx-auto">
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+
+        {/* Banner — gradient header */}
+        <div className="h-36 bg-gradient-to-tr from-indigo-900 via-indigo-700 to-indigo-500 relative overflow-hidden">
+          {/* Subtle decorative circles */}
+          <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full bg-white/5" />
+          <div className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full bg-white/5" />
+          <div className="absolute top-4 right-20 w-20 h-20 rounded-full bg-white/5" />
+
+          {/* Action buttons top-right */}
+          <div className="absolute top-4 right-4 flex gap-2">
+            <Link
+              href="/forgot-password"
+              className="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-lg backdrop-blur-sm transition-colors font-medium"
+            >
+              Reset Password
+            </Link>
+            <button
+              disabled
+              className="text-xs bg-white/10 text-white/60 px-3 py-1.5 rounded-lg font-medium cursor-not-allowed"
+              title="Coming soon"
+            >
+              Edit Profile
+            </button>
+          </div>
+        </div>
+
+        <div className="px-6 pb-8">
+          {/* Avatar + name row */}
+          <div className="flex items-end gap-4 -mt-10 mb-6">
+            <div className="w-20 h-20 rounded-full bg-indigo-700 border-4 border-white shadow-md flex items-center justify-center text-white text-2xl font-bold flex-shrink-0">
+              {initials}
             </div>
-            <div className="p-4 bg-surface-container-low rounded-lg border border-outline-variant">
-              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider block mb-1">Role</label>
-              <p className="font-body-md text-on-surface">{activeRole ?? '—'}</p>
-            </div>
-            {collegeId && (
-              <div className="p-4 bg-surface-container-low rounded-lg border border-outline-variant">
-                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider block mb-1">College ID</label>
-                <p className="font-body-md text-on-surface font-mono text-sm">{collegeId}</p>
-              </div>
-            )}
-            <div className="pt-2">
-              <p className="font-body-sm text-on-surface-variant text-center text-sm">
-                Profile editing coming soon. Contact support to update your details.
+            <div className="pb-1 min-w-0">
+              <h1 className="text-xl font-bold text-gray-900 truncate">{fullName}</h1>
+              <p className={`text-sm font-semibold ${roleColor[roleDisplay] || 'text-indigo-600'}`}>
+                {roleDisplay}
               </p>
             </div>
           </div>
+
+          {/* Info grid — 2 columns on desktop */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Email</p>
+              <p className="text-gray-900 font-medium truncate">{profile?.email || '—'}</p>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Role</p>
+              <p className={`font-semibold ${roleColor[roleDisplay] || 'text-indigo-600'}`}>
+                {roleDisplay}
+              </p>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">
+                Email Verification
+              </p>
+              {profile?.isEmailVerified ? (
+                <p className="text-green-600 font-semibold flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center text-xs">✓</span>
+                  Verified
+                </p>
+              ) : (
+                <p className="text-amber-600 font-semibold flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center text-xs">!</span>
+                  Not verified
+                </p>
+              )}
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">
+                Account ID
+              </p>
+              <p className="text-gray-500 font-mono text-sm truncate">
+                {profile?.id?.slice(0, 8).toUpperCase() || '—'}
+              </p>
+            </div>
+          </div>
+
+          {/* Quick links */}
+          <div className="mt-6 pt-6 border-t border-gray-100">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Quick Links</p>
+            <div className="flex flex-wrap gap-2">
+              <Link href="/my-tickets"
+                className="text-sm text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-lg font-medium transition-colors">
+                My Tickets
+              </Link>
+              <Link href="/certificates"
+                className="text-sm text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-lg font-medium transition-colors">
+                My Certificates
+              </Link>
+              <Link href="/events"
+                className="text-sm text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-lg font-medium transition-colors">
+                Discover Events
+              </Link>
+            </div>
+          </div>
+
+          <p className="text-xs text-gray-400 text-center mt-6">
+            To update your name or college details, contact{' '}
+            <a href="mailto:support@eventura.app" className="text-indigo-500 hover:underline">
+              support@eventura.app
+            </a>
+          </p>
         </div>
       </div>
     </div>

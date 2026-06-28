@@ -13,6 +13,57 @@ export default function QRScannerPage() {
   const [manualInput, setManualInput] = useState('');
   const params = useParams();
 
+  // Web Audio API sound feedback
+  const playSound = (type: 'success' | 'error' | 'duplicate') => {
+    try {
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      const ctx = new AudioContext();
+
+      const oscillator = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(ctx.destination);
+
+      if (type === 'success') {
+        // High pleasant chime
+        oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+        oscillator.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
+        gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+        oscillator.start(ctx.currentTime);
+        oscillator.stop(ctx.currentTime + 0.4);
+      } else if (type === 'duplicate') {
+        // Double low buzz
+        oscillator.frequency.setValueAtTime(220, ctx.currentTime);
+        gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+        oscillator.start(ctx.currentTime);
+        oscillator.stop(ctx.currentTime + 0.15);
+        // Second buzz
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.frequency.setValueAtTime(180, ctx.currentTime + 0.2);
+        gain2.gain.setValueAtTime(0.3, ctx.currentTime + 0.2);
+        gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+        osc2.start(ctx.currentTime + 0.2);
+        osc2.stop(ctx.currentTime + 0.4);
+      } else {
+        // Error — low single buzz (sawtooth)
+        oscillator.frequency.setValueAtTime(200, ctx.currentTime);
+        oscillator.type = 'sawtooth';
+        gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+        oscillator.start(ctx.currentTime);
+        oscillator.stop(ctx.currentTime + 0.3);
+      }
+    } catch (err) {
+      // Web Audio not supported — silent fail
+      console.log('[Scanner] Audio not available');
+    }
+  };
+
   const handleScan = async (qrValue: string) => {
     if (isValidating || !qrValue.trim()) return;
     setIsValidating(true);
@@ -29,11 +80,20 @@ export default function QRScannerPage() {
 
       setScanResult({ result, message, attendee, checkedInAt });
 
-      // Map result to scan state
-      if (result === 'SUCCESS') setScanState('success');
-      else if (result === 'DUPLICATE') setScanState('duplicate');
-      else if (result === 'PAYMENT_PENDING') setScanState('payment_pending');
-      else setScanState('invalid');
+      // Map result to scan state + audio feedback
+      if (result === 'SUCCESS') {
+        setScanState('success');
+        playSound('success');
+      } else if (result === 'DUPLICATE') {
+        setScanState('duplicate');
+        playSound('duplicate');
+      } else if (result === 'PAYMENT_PENDING') {
+        setScanState('payment_pending');
+        playSound('error');
+      } else {
+        setScanState('invalid');
+        playSound('error');
+      }
 
       // Auto-reset to idle after 3 seconds
       setTimeout(() => {
@@ -45,6 +105,7 @@ export default function QRScannerPage() {
 
     } catch (err) {
       setScanState('invalid');
+      playSound('error');
       setScanResult({ result: 'INVALID', message: 'Scan failed. Try again.' });
       setTimeout(() => {
         setScanState('idle');

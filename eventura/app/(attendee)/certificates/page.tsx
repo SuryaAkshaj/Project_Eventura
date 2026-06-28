@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { certificatesApi } from "@/lib/api/certificates.api";
 import { registrationsApi } from "@/lib/api/registrations.api";
 
@@ -59,9 +60,9 @@ export default function CertificatesPage() {
           <nav aria-label="Breadcrumb" className="flex text-on-surface-variant font-label-sm text-label-sm mb-4">
             <ol className="inline-flex items-center space-x-1 md:space-x-3">
               <li className="inline-flex items-center">
-                <a href="#" className="hover:text-primary flex items-center">
+                <Link href="/dashboard" className="hover:text-primary flex items-center">
                   <span className="material-symbols-outlined text-[16px] mr-1">home</span>Home
-                </a>
+                </Link>
               </li>
               <li>
                 <div className="flex items-center">
@@ -113,9 +114,9 @@ export default function CertificatesPage() {
           <p className="font-body-md text-body-md text-on-surface-variant max-w-sm mb-8">
             No certificates yet. Attend events and get checked in to earn certificates.
           </p>
-          <a href="/events" className="font-label-sm text-label-sm bg-primary text-on-primary hover:bg-primary/90 transition-colors px-6 py-3 rounded-md shadow-sm">
+          <Link href="/events" className="font-label-sm text-label-sm bg-primary text-on-primary hover:bg-primary/90 transition-colors px-6 py-3 rounded-md shadow-sm">
             Discover Verified Events
-          </a>
+          </Link>
         </div>
       )}
 
@@ -279,9 +280,9 @@ export default function CertificatesPage() {
               <p className="font-body-md text-body-md text-on-surface-variant mb-6 max-w-xs">
                 Register for verified events to continue building your co-curricular transcript.
               </p>
-              <a href="/events" className="font-label-sm text-label-sm bg-primary text-on-primary hover:bg-primary/90 transition-colors px-6 py-3 rounded-md shadow-sm">
+              <Link href="/events" className="font-label-sm text-label-sm bg-primary text-on-primary hover:bg-primary/90 transition-colors px-6 py-3 rounded-md shadow-sm">
                 Discover Verified Events
-              </a>
+              </Link>
             </div>
           </div>
         </section>

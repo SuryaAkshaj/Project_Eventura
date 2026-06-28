@@ -3,6 +3,7 @@ import * as crypto from 'crypto';
 import * as path from 'path';
 import * as fs from 'fs';
 import { prismaAdmin } from '@config/database';
+import { AppError } from '@shared/errors/AppError';
 import { getCertificateHTML } from './certificate.template';
 
 export async function generateCertificate(registrationId: string, requestedBy: string, isOrganiser: boolean) {
@@ -21,20 +22,20 @@ export async function generateCertificate(registrationId: string, requestedBy: s
     }
   });
 
-  if (!registration) throw { code: 'NOT_FOUND', message: 'Registration not found', status: 404 };
+  if (!registration) throw AppError.notFound('Registration not found');
 
   // 2. Verify requester is the attendee or the organiser
   if (!isOrganiser && registration.userId !== requestedBy) {
-    throw { code: 'FORBIDDEN', message: 'You can only download your own certificates', status: 403 };
+    throw AppError.forbidden('You can only download your own certificates');
   }
 
   // 3. Check eligibility — must be CHECKED_IN
   if (registration.status !== 'CHECKED_IN') {
-    throw {
-      code: 'NOT_ELIGIBLE',
-      message: 'Certificate is only available after attendance is confirmed via QR check-in',
-      status: 400
-    };
+    throw new AppError(
+      'NOT_ELIGIBLE',
+      'Certificate is only available after attendance is confirmed via QR check-in',
+      400
+    );
   }
 
   // 4. Return existing certificate if already generated
@@ -61,7 +62,8 @@ export async function generateCertificate(registrationId: string, requestedBy: s
     year: 'numeric',
   });
 
-  const html = getCertificateHTML({
+  // getCertificateHTML is now async (generates real QR code)
+  const html = await getCertificateHTML({
     attendeeName,
     eventTitle: registration.event.title,
     organisingBody,
@@ -141,7 +143,7 @@ export async function downloadCertificate(certificateId: string) {
   );
 
   if (!fs.existsSync(filePath)) {
-    throw { code: 'NOT_FOUND', message: 'Certificate file not found. Please regenerate.', status: 404 };
+    throw AppError.notFound('Certificate file not found. Please regenerate.');
   }
 
   return filePath;
@@ -211,7 +213,7 @@ export async function bulkGenerateCertificates(eventId: string, organizerCollege
   const event = await prismaAdmin.event.findFirst({
     where: { id: eventId, collegeId: organizerCollegeId }
   });
-  if (!event) throw { code: 'FORBIDDEN', message: 'Event not found or access denied', status: 403 };
+  if (!event) throw AppError.forbidden('Event not found or access denied');
 
   // Get all checked-in registrations without certificates
   const registrations = await prismaAdmin.registration.findMany({

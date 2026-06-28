@@ -1,4 +1,6 @@
-export function getCertificateHTML(data: {
+import QRCode from 'qrcode';
+
+export async function getCertificateHTML(data: {
   attendeeName: string;
   eventTitle: string;
   organisingBody: string;       // Club name + College name
@@ -6,7 +8,15 @@ export function getCertificateHTML(data: {
   certificateId: string;
   qrToken: string;
   issuedAt: string;
-}): string {
+}): Promise<string> {
+  // Generate QR code as data URL pointing to verification URL
+  const verifyUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/certificates/verify/${data.certificateId}`;
+  const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
+    width: 80,
+    margin: 1,
+    color: { dark: '#2E3192', light: '#FFFFFF' },
+  });
+
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -264,8 +274,8 @@ export function getCertificateHTML(data: {
       </div>
 
       <div class="qr-block">
+        <img src="${qrDataUrl}" width="80" height="80" alt="Verify certificate" />
         <div class="qr-label">Scan to verify</div>
-        <div class="qr-label">${data.certificateId.slice(0, 8).toUpperCase()}</div>
       </div>
     </div>
   </div>

@@ -56,7 +56,11 @@ export default function SuperAdminDashboardPage() {
           <span className="text-primary font-bold">Super Admin Dashboard</span>
         </div>
         <div className="flex items-center gap-md">
-          <button className="text-on-surface-variant hover:text-primary p-2 rounded-full hover:bg-surface-variant">
+          <button
+            id="admin-notifications-btn"
+            onClick={() => alert('Notifications coming soon!')}
+            className="text-on-surface-variant hover:text-primary p-2 rounded-full hover:bg-surface-variant"
+          >
             <span className="material-symbols-outlined">notifications</span>
           </button>
         </div>

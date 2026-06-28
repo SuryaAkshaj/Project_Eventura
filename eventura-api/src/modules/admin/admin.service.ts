@@ -1,4 +1,6 @@
 import { prismaAdmin } from '@config/database';
+import { AppError } from '@shared/errors/AppError';
+import { CollegeQuery, UserQuery, AuditQuery } from '@shared/types/query.types';
 
 export async function getPlatformStats() {
   const [
@@ -57,9 +59,9 @@ export async function getPendingColleges() {
   });
 }
 
-export async function getAllColleges(query: any) {
-  const page = query.page || 1;
-  const limit = query.limit || 10;
+export async function getAllColleges(query: CollegeQuery) {
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 10;
   const skip = (page - 1) * limit;
 
   const where: any = {};
@@ -92,9 +94,9 @@ export async function getAllColleges(query: any) {
 
 export async function approveCollege(collegeId: string, adminUserId: string) {
   const college = await prismaAdmin.college.findUnique({ where: { id: collegeId } });
-  if (!college) throw { code: 'NOT_FOUND', message: 'College not found', status: 404 };
+  if (!college) throw AppError.notFound('College not found');
   if (college.approvalStatus === 'APPROVED') {
-    throw { code: 'ALREADY_APPROVED', message: 'College is already approved', status: 400 };
+    throw AppError.badRequest('College is already approved');
   }
 
   await prismaAdmin.$transaction([
@@ -125,7 +127,7 @@ export async function approveCollege(collegeId: string, adminUserId: string) {
 
 export async function rejectCollege(collegeId: string, adminUserId: string, reason?: string) {
   const college = await prismaAdmin.college.findUnique({ where: { id: collegeId } });
-  if (!college) throw { code: 'NOT_FOUND', message: 'College not found', status: 404 };
+  if (!college) throw AppError.notFound('College not found');
 
   await prismaAdmin.$transaction([
     prismaAdmin.college.update({
@@ -188,9 +190,9 @@ export async function approveClub(clubId: string, adminUserId: string) {
     where: { id: clubId },
     include: { college: { select: { name: true, approvalStatus: true } } }
   });
-  if (!club) throw { code: 'NOT_FOUND', message: 'Club not found', status: 404 };
+  if (!club) throw AppError.notFound('Club not found');
   if (club.college.approvalStatus !== 'APPROVED') {
-    throw { code: 'COLLEGE_NOT_APPROVED', message: 'Parent college must be approved first', status: 400 };
+    throw new AppError('COLLEGE_NOT_APPROVED', 'Parent college must be approved first', 400);
   }
 
   await prismaAdmin.$transaction([
@@ -217,7 +219,7 @@ export async function approveClub(clubId: string, adminUserId: string) {
 
 export async function rejectClub(clubId: string, adminUserId: string, reason?: string) {
   const club = await prismaAdmin.club.findUnique({ where: { id: clubId } });
-  if (!club) throw { code: 'NOT_FOUND', message: 'Club not found', status: 404 };
+  if (!club) throw AppError.notFound('Club not found');
 
   await prismaAdmin.$transaction([
     prismaAdmin.club.update({
@@ -241,9 +243,9 @@ export async function rejectClub(clubId: string, adminUserId: string, reason?: s
   return { rejected: true };
 }
 
-export async function getAllUsers(query: any) {
-  const page = query.page || 1;
-  const limit = query.limit || 20;
+export async function getAllUsers(query: UserQuery) {
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 20;
   const skip = (page - 1) * limit;
 
   const where: any = {};
@@ -322,9 +324,9 @@ export async function updatePlatformSettings(data: any, adminUserId: string) {
   return settings;
 }
 
-export async function getAuditLog(query: any) {
-  const page = query.page || 1;
-  const limit = query.limit || 50;
+export async function getAuditLog(query: AuditQuery) {
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 50;
   const skip = (page - 1) * limit;
 
   const where: any = {};
@@ -349,48 +351,93 @@ export async function getAuditLog(query: any) {
   };
 }
 
+export async function getAllEvents(query: { page?: number; limit?: number; search?: string; status?: string }) {
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 20;
+  const skip = (page - 1) * limit;
+
+  const where: any = {};
+  if (query.search) {
+    where.OR = [
+      { title: { contains: query.search, mode: 'insensitive' } },
+      { description: { contains: query.search, mode: 'insensitive' } },
+    ];
+  }
+  if (query.status) where.status = query.status;
+
+  const [events, total] = await Promise.all([
+    prismaAdmin.event.findMany({
+      where,
+      include: {
+        college: { select: { id: true, name: true, domain: true } },
+        club: { select: { id: true, name: true } },
+        _count: { select: { registrations: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prismaAdmin.event.count({ where }),
+  ]);
+
+  return {
+    events,
+    meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+  };
+}
+
 export async function getMultiTenantHealth() {
+  // Single query to get all colleges with counts
   const colleges = await prismaAdmin.college.findMany({
     where: { approvalStatus: 'APPROVED' },
     include: {
       _count: {
         select: {
-          clubs: true,
+          clubs: { where: { approvalStatus: 'APPROVED' } },
           events: true,
         }
       }
     }
   });
 
-  const healthData = await Promise.all(colleges.map(async (college) => {
-    const [activeEvents, totalUsers, totalRevenue] = await Promise.all([
-      prismaAdmin.event.count({
-        where: { collegeId: college.id, status: 'PUBLISHED' }
-      }),
-      prismaAdmin.roleAssignment.count({
-        where: { collegeId: college.id, status: 'APPROVED' }
-      }),
-      prismaAdmin.payment.aggregate({
-        where: {
-          status: 'PAID',
-          registration: { event: { collegeId: college.id } }
-        },
-        _sum: { amount: true }
-      }),
-    ]);
+  // Get active events count per college in one query
+  const activeEventCounts = await prismaAdmin.event.groupBy({
+    by: ['collegeId'],
+    where: { status: 'PUBLISHED' },
+    _count: { id: true }
+  });
 
-    return {
-      id: college.id,
-      name: college.name,
-      domain: college.domain,
-      totalClubs: college._count.clubs,
-      totalEvents: college._count.events,
-      activeEvents,
-      totalUsers,
-      totalRevenue: Number(totalRevenue._sum.amount || 0),
-      status: 'healthy',
-    };
+  // Get user counts per college in one query
+  const userCounts = await prismaAdmin.roleAssignment.groupBy({
+    by: ['collegeId'],
+    where: { status: 'APPROVED' },
+    _count: { id: true }
+  });
+
+  // Get per-college revenue in one raw query (avoids N+1 on nested relation)
+  const collegeRevenues = await prismaAdmin.$queryRaw<{ collegeId: string; total: number }[]>`
+    SELECT e."collegeId", COALESCE(SUM(p.amount), 0) as total
+    FROM "Payment" p
+    JOIN "Registration" r ON p."registrationId" = r.id
+    JOIN "Event" e ON r."eventId" = e.id
+    WHERE p.status = 'PAID'
+    GROUP BY e."collegeId"
+  `;
+
+  // Build lookup maps for O(1) access
+  const activeMap = new Map(activeEventCounts.map(r => [r.collegeId, r._count.id]));
+  const userMap = new Map(userCounts.map(r => [r.collegeId, r._count.id]));
+  const revenueMap = new Map(collegeRevenues.map(r => [r.collegeId, Number(r.total)]));
+
+  return colleges.map(college => ({
+    id: college.id,
+    name: college.name,
+    domain: college.domain,
+    totalClubs: college._count.clubs,
+    totalEvents: college._count.events,
+    activeEvents: activeMap.get(college.id) || 0,
+    totalUsers: userMap.get(college.id) || 0,
+    totalRevenue: revenueMap.get(college.id) || 0,
+    status: 'healthy',
   }));
-
-  return healthData;
 }

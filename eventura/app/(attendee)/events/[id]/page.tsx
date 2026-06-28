@@ -8,6 +8,8 @@ import { registrationsApi } from "@/lib/api/registrations.api";
 import { paymentsApi } from "@/lib/api/payments.api";
 import { useRazorpay } from "@/lib/hooks/useRazorpay";
 import { useAuthStore } from "@/lib/store/authStore";
+import apiClient from "@/lib/api/client";
+import DeadlineBadge from "@/components/ui/DeadlineBadge";
 
 export default function EventDetailPage() {
   const [isPurchased, setIsPurchased] = useState(false);
@@ -21,6 +23,16 @@ export default function EventDetailPage() {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const params = useParams();
   const router = useRouter();
+
+  // Ratings state
+  const [ratings, setRatings] = useState<any>(null);
+  const [userRating, setUserRating] = useState(0);
+  const [userComment, setUserComment] = useState('');
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
+
+  // Sub-events state (for FEST type)
+  const [subEvents, setSubEvents] = useState<any[]>([]);
 
   const { data: eventData, isLoading, error: eventError } = useQuery({
     queryKey: ['event', params.id],
@@ -45,6 +57,22 @@ export default function EventDetailPage() {
       })
       .catch(() => {});
   }, [event, isAuthenticated]);
+
+  // Fetch ratings
+  useEffect(() => {
+    if (!event) return;
+    apiClient.get(`/events/${event.id}/feedback`)
+      .then(res => setRatings(res.data.data))
+      .catch(() => {});
+  }, [event]);
+
+  // Fetch sub-events for FEST type events
+  useEffect(() => {
+    if (!event || event.eventType !== 'FEST') return;
+    eventsApi.getSubEvents(params.id as string)
+      .then(res => setSubEvents(res.data.data))
+      .catch(() => {});
+  }, [event?.eventType, params.id]);
 
   const handleRegister = async () => {
     if (!isAuthenticated) {
@@ -193,8 +221,10 @@ export default function EventDetailPage() {
           </div>
           <div className="p-lg space-y-4">
             <div className="bg-surface-container-low rounded-xl p-4 border border-outline-variant text-center">
-              <p className="font-label-sm text-label-sm text-on-surface-variant uppercase mb-2">Ticket Number</p>
-              <p className="font-headline-md text-headline-md text-primary font-mono">EV-{Math.floor(Math.random() * 9000) + 1000}</p>
+              <p className="font-label-sm text-label-sm text-on-surface-variant uppercase mb-2">Registration ID</p>
+              <p className="font-headline-md text-headline-md text-primary font-mono">
+                {registrationId ? registrationId.slice(0, 8).toUpperCase() : '—'}
+              </p>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between">
@@ -262,7 +292,7 @@ export default function EventDetailPage() {
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
         <div className="absolute bottom-0 left-0 p-lg md:p-xl w-full">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             {event.category && (
               <span className="px-3 py-1 bg-primary/90 text-on-primary rounded text-label-sm uppercase tracking-wider backdrop-blur-sm border border-white/20">{event.category}</span>
             )}
@@ -272,6 +302,12 @@ export default function EventDetailPage() {
             {event.status === 'DRAFT' && (
               <span className="px-3 py-1 bg-yellow-100/90 text-yellow-800 rounded text-label-sm uppercase tracking-wider backdrop-blur-sm">Draft</span>
             )}
+            {/* Deadline badge on hero */}
+            <DeadlineBadge
+              startDate={event.startDate}
+              registrationDeadline={event.registrationDeadline}
+              className="ml-1"
+            />
           </div>
           <h1 className="font-display-lg text-display-lg text-white mb-2 shadow-sm">{event.title}</h1>
           {event.description && (
@@ -293,6 +329,11 @@ export default function EventDetailPage() {
                 <h3 className="font-label-sm text-secondary mb-1">Start Date</h3>
                 <p className="font-title-md text-on-surface">{formattedStart}</p>
                 {formattedTime && <p className="text-body-md text-on-surface-variant mt-1">{formattedTime}</p>}
+                <DeadlineBadge
+                  startDate={event.startDate}
+                  registrationDeadline={event.registrationDeadline}
+                  className="mt-1"
+                />
               </div>
             </div>
             <div className="bg-surface border border-outline-variant rounded-xl p-md flex items-start gap-3 hover:border-primary transition-colors">
@@ -315,6 +356,23 @@ export default function EventDetailPage() {
               </div>
             </div>
           </section>
+
+          {/* Prize Pool info */}
+          {event.prizePool && Number(event.prizePool) > 0 && (
+            <section className="bg-amber-50 border border-amber-200 rounded-xl p-md flex items-center gap-4">
+              <span className="text-4xl">🏆</span>
+              <div>
+                <p className="font-label-sm text-label-sm text-amber-700 uppercase tracking-wide mb-1">Total Prize Pool</p>
+                <p className="font-headline-md text-headline-md text-amber-800">₹{Number(event.prizePool).toLocaleString('en-IN')}</p>
+              </div>
+              {event.teamSizeMin && event.teamSizeMax && (
+                <div className="ml-auto text-right">
+                  <p className="font-label-sm text-label-sm text-amber-700 uppercase tracking-wide mb-1">Team Size</p>
+                  <p className="font-title-md text-amber-800">{event.teamSizeMin}–{event.teamSizeMax} members</p>
+                </div>
+              )}
+            </section>
+          )}
 
           {/* About */}
           <section className="bg-surface border border-outline-variant rounded-xl p-lg md:p-xl">
@@ -377,6 +435,197 @@ export default function EventDetailPage() {
               </div>
             </section>
           )}
+
+          {/* Sub-events section — only for FEST */}
+          {event?.eventType === 'FEST' && (
+            <section className="bg-surface border border-outline-variant rounded-xl p-lg md:p-xl">
+              <h2 className="font-headline-lg text-headline-lg text-on-surface mb-lg pb-4 border-b border-outline-variant flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary">event_available</span>
+                Events &amp; Competitions
+                {subEvents.length > 0 && (
+                  <span className="ml-2 text-sm font-normal text-on-surface-variant">({subEvents.length})</span>
+                )}
+              </h2>
+              {subEvents.length === 0 ? (
+                <div className="bg-surface-container-low rounded-xl border border-dashed border-outline-variant p-8 text-center">
+                  <p className="text-on-surface-variant text-sm">Individual competitions will be listed here once published</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {subEvents.map((sub: any) => (
+                    <a
+                      key={sub.id}
+                      href={`/events/${sub.id}`}
+                      className="flex items-center justify-between p-4 bg-surface rounded-xl border border-outline-variant hover:border-primary/50 hover:shadow-sm transition-all"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">
+                          {sub.eventType === 'COMPETITION' ? '🏆' :
+                           sub.eventType === 'WORKSHOP' ? '🛠️' :
+                           sub.eventType === 'SEMINAR' ? '🎤' : '📅'}
+                        </span>
+                        <div>
+                          <p className="font-medium text-on-surface">{sub.title}</p>
+                          <div className="flex items-center gap-3 mt-0.5">
+                            <p className="text-xs text-on-surface-variant">
+                              {new Date(sub.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                            </p>
+                            {sub.teamSizeMin && (
+                              <p className="text-xs text-on-surface-variant">
+                                Team: {sub.teamSizeMin === sub.teamSizeMax ? sub.teamSizeMin : `${sub.teamSizeMin}–${sub.teamSizeMax}`}
+                              </p>
+                            )}
+                            <p className="text-xs text-on-surface-variant">
+                              {sub._count?.registrations || 0} registered
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {sub.prizePool && Number(sub.prizePool) > 0 && (
+                          <span className="text-sm font-semibold text-amber-600">
+                            ₹{Number(sub.prizePool).toLocaleString('en-IN')}
+                          </span>
+                        )}
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                          sub.isFree ? 'bg-green-100 text-green-700' : 'bg-primary-container/20 text-primary'
+                        }`}>
+                          {sub.isFree ? 'Free' : `₹${Number(sub.ticketPrice)}`}
+                        </span>
+                        <span className="text-on-surface-variant">→</span>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* Accommodation info — only for FEST */}
+          {event?.eventType === 'FEST' && event?.accommodation && (
+            <section className="bg-blue-50 rounded-xl border border-blue-100 p-5">
+              <h3 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                🏨 Accommodation Available
+              </h3>
+              <p className="text-sm text-blue-700">
+                {event.accommodationInfo || 'Accommodation details will be shared after registration.'}
+              </p>
+            </section>
+          )}
+
+          {/* Guest Performers — only for FEST */}
+          {event?.eventType === 'FEST' && event?.guestPerformers && (
+            <section className="bg-purple-50 rounded-xl border border-purple-100 p-5">
+              <h3 className="font-semibold text-purple-800 mb-2">🎭 Guest Performers</h3>
+              <p className="text-sm text-purple-700">{event.guestPerformers}</p>
+            </section>
+          )}
+
+          {/* Competition Rules — only for COMPETITION */}
+          {event?.eventType === 'COMPETITION' && event?.competitionRules && (
+            <section className="bg-surface border border-outline-variant rounded-xl p-lg">
+              <h3 className="font-headline-md text-headline-md text-on-surface mb-3 flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary">rule</span>
+                Rules &amp; Regulations
+              </h3>
+              <p className="text-body-md text-on-surface-variant whitespace-pre-line leading-relaxed">
+                {event.competitionRules}
+              </p>
+            </section>
+          )}
+
+          {/* Ratings Section */}
+          {ratings && ratings.totalReviews > 0 && (
+            <section className="bg-white rounded-xl border border-gray-200 p-6">
+              <h2 className="font-headline-lg text-headline-lg text-on-surface mb-md pb-4 border-b border-outline-variant flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                Attendee Reviews ({ratings.totalReviews})
+              </h2>
+              <div className="flex items-center gap-6 mb-6">
+                <div className="text-center shrink-0">
+                  <p className="text-4xl font-bold text-indigo-700">{ratings.averageRating}</p>
+                  <div className="flex gap-0.5 mt-1 justify-center">
+                    {[1,2,3,4,5].map(star => (
+                      <span key={star} className={`text-lg ${star <= Math.round(ratings.averageRating) ? 'text-amber-400' : 'text-gray-200'}`}>★</span>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">out of 5</p>
+                </div>
+                <div className="flex-1 space-y-1">
+                  {[5,4,3,2,1].map(star => (
+                    <div key={star} className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500 w-4">{star}★</span>
+                      <div className="flex-1 bg-gray-100 rounded-full h-2">
+                        <div
+                          className="bg-amber-400 h-2 rounded-full transition-all"
+                          style={{ width: ratings.totalReviews > 0 ? `${(ratings.distribution[star] / ratings.totalReviews) * 100}%` : '0%' }}
+                        />
+                      </div>
+                      <span className="text-xs text-gray-400 w-4">{ratings.distribution[star]}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Rate this event — only show if user is registered (has attended) */}
+          {isPurchased && !ratingSubmitted && (
+            <section className="bg-indigo-50 rounded-xl border border-indigo-100 p-6">
+              <h3 className="font-title-md text-title-md text-indigo-800 mb-3 flex items-center gap-2">
+                <span className="material-symbols-outlined text-indigo-600" style={{ fontVariationSettings: "'FILL' 1" }}>rate_review</span>
+                Rate this event
+              </h3>
+              <div className="flex gap-2 mb-3">
+                {[1,2,3,4,5].map(star => (
+                  <button
+                    key={star}
+                    onClick={() => setUserRating(star)}
+                    className={`text-2xl transition-transform hover:scale-110 ${star <= userRating ? 'text-amber-400' : 'text-gray-300'}`}
+                  >
+                    ★
+                  </button>
+                ))}
+              </div>
+              <textarea
+                value={userComment}
+                onChange={e => setUserComment(e.target.value)}
+                placeholder="Share your experience (optional)"
+                rows={3}
+                className="w-full px-3 py-2 border border-indigo-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white resize-none mb-3"
+              />
+              <button
+                onClick={async () => {
+                  if (!userRating) return;
+                  setIsSubmittingRating(true);
+                  try {
+                    await apiClient.post(`/events/${params.id}/feedback`, {
+                      rating: userRating,
+                      comment: userComment || undefined
+                    });
+                    setRatingSubmitted(true);
+                    // Refresh ratings
+                    const res = await apiClient.get(`/events/${params.id}/feedback`);
+                    setRatings(res.data.data);
+                  } catch (err: any) {
+                    alert(err.response?.data?.error?.message || 'Failed to submit rating');
+                  } finally {
+                    setIsSubmittingRating(false);
+                  }
+                }}
+                disabled={!userRating || isSubmittingRating}
+                className="bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isSubmittingRating ? 'Submitting...' : 'Submit Review'}
+              </button>
+            </section>
+          )}
+
+          {ratingSubmitted && (
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+              <p className="text-green-700 font-medium">✓ Thank you for your review!</p>
+            </div>
+          )}
         </div>
 
         {/* Right Sidebar */}
@@ -427,7 +676,7 @@ export default function EventDetailPage() {
                   className="w-full bg-primary text-on-primary font-title-md text-title-md py-4 rounded-xl shadow-sm mb-3 flex items-center justify-center gap-2 opacity-75 cursor-not-allowed"
                 >
                   <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>hourglass_top</span>
-                  You're on the waitlist
+                  You&apos;re on the waitlist
                 </button>
               ) : (
                 <button

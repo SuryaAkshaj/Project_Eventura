@@ -21,9 +21,10 @@ export default function CollegesVerificationPage() {
         adminApi.getPendingClubs(),
         adminApi.getAllColleges({ limit: 50 }),
       ]);
-      setPendingColleges(pendingCollegesRes.data.data);
-      setPendingClubs(pendingClubsRes.data.data);
-      setAllColleges(allCollegesRes.data.data);
+      setPendingColleges(pendingCollegesRes.data.data || []);
+      setPendingClubs(pendingClubsRes.data.data || []);
+      // getAllColleges returns paginated: { colleges: [...], meta: {...} }
+      setAllColleges(allCollegesRes.data.data?.colleges || []);
     } catch (err) {
       console.error("Failed to fetch admin data", err);
     } finally {

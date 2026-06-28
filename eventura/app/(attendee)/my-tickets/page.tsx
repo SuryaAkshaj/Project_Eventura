@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { QRCodeSVG } from "qrcode.react";
+import { ShimmerTicketCard } from "@/components/ui/Shimmer";
 
 // Status badge config mapped from API values
 const registrationStatusConfig: Record<string, { label: string; classes: string }> = {
@@ -76,14 +77,14 @@ export default function MyTicketsPage() {
   const formatDate = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
-  // Loading skeleton
+  // Loading skeleton — ShimmerTicketCard
   if (isLoading) {
     return (
-      <div className="flex-grow w-full max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop py-xl animate-pulse">
-        <div className="h-10 bg-gray-200 rounded w-48 mb-xl" />
+      <div className="flex-grow w-full max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop py-xl">
+        <div className="h-10 bg-gray-200 rounded w-48 mb-xl animate-pulse" />
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-gutter">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="bg-gray-200 rounded-xl h-64" />
+          {[1, 2, 3, 4].map(i => (
+            <ShimmerTicketCard key={i} />
           ))}
         </div>
       </div>

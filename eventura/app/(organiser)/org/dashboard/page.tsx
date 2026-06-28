@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useQuery } from '@tanstack/react-query';
 import { eventsApi } from "@/lib/api/events.api";
 import { useAuthStore } from "@/lib/store/authStore";
@@ -14,6 +15,7 @@ const statusColors: Record<string, string> = {
 
 export default function OrgDashboardPage() {
   const { user } = useAuthStore();
+  const router = useRouter();
 
   const { data: orgData, isLoading } = useQuery({
     queryKey: ['org-events'],
@@ -44,13 +46,19 @@ export default function OrgDashboardPage() {
           <span className="font-headline-md text-headline-md font-bold text-primary">Eventura</span>
         </div>
         <div className="flex items-center gap-4">
-          <button className="hidden md:block font-body-md text-body-md text-secondary border border-outline-variant bg-white px-4 py-2 rounded hover:bg-surface-variant transition-colors">
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="hidden md:block font-body-md text-body-md text-secondary border border-outline-variant bg-white px-4 py-2 rounded hover:bg-surface-variant transition-colors"
+          >
             Switch to Attendee
           </button>
           <Link href="/org/events/create" className="font-body-md text-body-md bg-primary text-white px-4 py-2 rounded hover:bg-primary/90 transition-colors">
             Create Event
           </Link>
-          <button className="w-10 h-10 rounded-full bg-surface-variant border border-outline-variant overflow-hidden shrink-0 flex items-center justify-center">
+          <button
+            onClick={() => router.push('/profile')}
+            className="w-10 h-10 rounded-full bg-surface-variant border border-outline-variant overflow-hidden shrink-0 flex items-center justify-center"
+          >
             <span className="material-symbols-outlined text-on-surface-variant">person</span>
           </button>
         </div>
@@ -111,8 +119,19 @@ export default function OrgDashboardPage() {
                 )}
                 {!isLoading && orgEvents.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="py-8 px-6 text-center text-on-surface-variant">
-                      No events yet. <Link href="/org/events/create" className="text-primary hover:underline">Create your first event</Link>
+                    <td colSpan={5}>
+                      <div className="text-center py-12 px-6">
+                        <p className="text-5xl mb-4">🎪</p>
+                        <h3 className="font-title-md text-title-md text-on-surface mb-2">No events yet</h3>
+                        <p className="font-body-md text-body-md text-on-surface-variant mb-6">Create your first event to get started</p>
+                        <a
+                          href="/org/events/create"
+                          className="inline-flex items-center gap-2 bg-primary text-on-primary px-6 py-2.5 rounded-lg font-label-sm text-label-sm hover:bg-primary/90 transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">add</span>
+                          Create Event
+                        </a>
+                      </div>
                     </td>
                   </tr>
                 )}

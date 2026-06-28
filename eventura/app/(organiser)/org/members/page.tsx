@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { mockOrgMembers, mockOrgEvents, type OrgMember, type MemberRole } from "@/lib/mockData";
+import { useState, useEffect } from "react";
+import { membersApi } from "@/lib/api/members.api";
 import {
   Dialog,
   DialogContent,
@@ -16,51 +16,41 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
-const ROLES: MemberRole[] = ["Observer", "Event Manager", "Co-Organiser", "Admin"];
-
-const statusConfig = {
-  active: { label: "Active", classes: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  invited: { label: "Invited", classes: "bg-tertiary-fixed/50 text-on-tertiary-fixed border-tertiary-fixed" },
-  inactive: { label: "Inactive", classes: "bg-surface-variant text-on-surface-variant border-outline-variant" },
+// Maps DB role names to display config
+const roleConfig: Record<string, string> = {
+  CLUB_PRESIDENT: "bg-primary/10 text-primary border-primary/20",
+  COLLEGE_ADMIN: "bg-secondary-container text-on-secondary-container border-secondary-fixed-dim",
+  EVENT_MANAGER: "bg-tertiary-fixed/40 text-on-tertiary-fixed border-tertiary-fixed",
+  ATTENDEE: "bg-surface-variant text-on-surface-variant border-outline-variant",
 };
 
-const roleConfig: Record<MemberRole, string> = {
-  Admin: "bg-primary/10 text-primary border-primary/20",
-  "Event Manager": "bg-secondary-container text-on-secondary-container border-secondary-fixed-dim",
-  "Co-Organiser": "bg-tertiary-fixed/40 text-on-tertiary-fixed border-tertiary-fixed",
-  Observer: "bg-surface-variant text-on-surface-variant border-outline-variant",
-};
+const formatRole = (role: string) =>
+  role.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
 
 export default function OrgMembersPage() {
-  const [members, setMembers] = useState<OrgMember[]>(mockOrgMembers);
+  const [members, setMembers] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [assignTarget, setAssignTarget] = useState<OrgMember | null>(null);
-  const [selectedRole, setSelectedRole] = useState<MemberRole>("Event Manager");
-  const [selectedEvent, setSelectedEvent] = useState(mockOrgEvents[0]?.id ?? "");
+  const [assignTarget, setAssignTarget] = useState<any | null>(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
+
+  useEffect(() => {
+    membersApi.getMyMembers()
+      .then((res) => setMembers(res.data.data))
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
+  }, []);
 
   const filtered = members.filter(
     (m) =>
       search === "" ||
-      m.name.toLowerCase().includes(search.toLowerCase()) ||
+      `${m.firstName} ${m.lastName}`.toLowerCase().includes(search.toLowerCase()) ||
       m.email.toLowerCase().includes(search.toLowerCase())
   );
-
-  const handleAssign = () => {
-    if (!assignTarget) return;
-    setMembers((prev) =>
-      prev.map((m) =>
-        m.id === assignTarget.id ? { ...m, role: selectedRole } : m
-      )
-    );
-    setAssignTarget(null);
-  };
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-surface-container-low">
@@ -82,7 +72,7 @@ export default function OrgMembersPage() {
                 Club Members
               </h1>
               <p className="font-body-md text-body-md text-on-surface-variant">
-                Manage your team — assign roles and responsibilities per event.
+                Manage your team — view roles and responsibilities.
               </p>
             </div>
             <div className="flex gap-3">
@@ -101,8 +91,8 @@ export default function OrgMembersPage() {
           <section className="grid grid-cols-3 gap-md">
             {[
               { label: "Total Members", value: members.length.toString(), icon: "group", color: "text-primary" },
-              { label: "Active", value: members.filter((m) => m.status === "active").length.toString(), icon: "check_circle", color: "text-[#2e7d32]" },
-              { label: "Pending Invites", value: members.filter((m) => m.status === "invited").length.toString(), icon: "schedule_send", color: "text-tertiary" },
+              { label: "Club Presidents", value: members.filter((m) => m.role === "CLUB_PRESIDENT").length.toString(), icon: "stars", color: "text-[#2e7d32]" },
+              { label: "Event Managers", value: members.filter((m) => m.role === "EVENT_MANAGER").length.toString(), icon: "event", color: "text-tertiary" },
             ].map((stat) => (
               <div key={stat.label} className="bg-surface border border-outline-variant rounded-xl p-4 shadow-sm">
                 <div className="flex items-center gap-3">
@@ -136,166 +126,101 @@ export default function OrgMembersPage() {
               </span>
             </div>
 
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-surface-container-low hover:bg-surface-container-low border-outline-variant">
-                  <TableHead className="font-label-sm text-on-surface-variant uppercase tracking-wider py-3">
-                    Member
-                  </TableHead>
-                  <TableHead className="font-label-sm text-on-surface-variant uppercase tracking-wider py-3">
-                    Role
-                  </TableHead>
-                  <TableHead className="font-label-sm text-on-surface-variant uppercase tracking-wider py-3">
-                    Status
-                  </TableHead>
-                  <TableHead className="font-label-sm text-on-surface-variant uppercase tracking-wider py-3 text-right">
-                    Events Managed
-                  </TableHead>
-                  <TableHead className="font-label-sm text-on-surface-variant uppercase tracking-wider py-3">
-                    Joined
-                  </TableHead>
-                  <TableHead className="font-label-sm text-on-surface-variant uppercase tracking-wider py-3" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((member) => {
-                  const sc = statusConfig[member.status];
-                  return (
+            {isLoading ? (
+              <div className="animate-pulse space-y-3 p-4">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="h-14 bg-gray-100 rounded-lg" />
+                ))}
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="text-center py-16">
+                <p className="text-3xl mb-3">👥</p>
+                <p className="font-body-md text-on-surface-variant font-medium">
+                  {search ? "No members match your search" : "No members yet"}
+                </p>
+                <p className="font-label-sm text-label-sm text-on-surface-variant mt-1">
+                  Members appear here when they sign up and get approved
+                </p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-surface-container-low hover:bg-surface-container-low border-outline-variant">
+                    <TableHead className="font-label-sm text-on-surface-variant uppercase tracking-wider py-3">
+                      Member
+                    </TableHead>
+                    <TableHead className="font-label-sm text-on-surface-variant uppercase tracking-wider py-3">
+                      Role
+                    </TableHead>
+                    <TableHead className="font-label-sm text-on-surface-variant uppercase tracking-wider py-3">
+                      Club
+                    </TableHead>
+                    <TableHead className="font-label-sm text-on-surface-variant uppercase tracking-wider py-3">
+                      Last Active
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((member) => (
                     <TableRow key={member.id} className="border-outline-variant hover:bg-surface-container/40 transition-colors">
                       <TableCell className="py-4">
                         <div className="flex items-center gap-3">
-                          <div className={`w-9 h-9 rounded-full ${member.avatarColor} flex items-center justify-center font-bold text-primary text-sm shrink-0 border border-outline-variant`}>
-                            {member.avatarInitials}
+                          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-sm shrink-0 border border-outline-variant">
+                            {member.firstName?.[0]}{member.lastName?.[0]}
                           </div>
                           <div>
-                            <p className="font-body-md text-body-md text-on-surface font-semibold">{member.name}</p>
+                            <p className="font-body-md text-body-md text-on-surface font-semibold">
+                              {member.firstName} {member.lastName}
+                            </p>
                             <p className="font-label-sm text-label-sm text-on-surface-variant">{member.email}</p>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell className="py-4">
-                        <span className={`inline-flex items-center font-label-sm text-label-sm px-2.5 py-1 rounded-sm border uppercase tracking-wide ${roleConfig[member.role]}`}>
-                          {member.role}
+                        <span className={`inline-flex items-center font-label-sm text-label-sm px-2.5 py-1 rounded-sm border uppercase tracking-wide ${roleConfig[member.role] ?? "bg-surface-variant text-on-surface-variant border-outline-variant"}`}>
+                          {formatRole(member.role)}
                         </span>
-                      </TableCell>
-                      <TableCell className="py-4">
-                        <span className={`inline-flex items-center gap-1 font-label-sm text-label-sm px-2.5 py-1 rounded-full border ${sc.classes}`}>
-                          {member.status === "active" && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
-                          {sc.label}
-                        </span>
-                      </TableCell>
-                      <TableCell className="py-4 text-right font-body-md text-body-md text-on-surface-variant">
-                        {member.eventsManaged}
+                        {member.expiresAt && (
+                          <p className="text-xs text-on-surface-variant mt-1">
+                            Expires {new Date(member.expiresAt).toLocaleDateString("en-IN")}
+                          </p>
+                        )}
                       </TableCell>
                       <TableCell className="py-4 font-body-md text-body-md text-on-surface-variant">
-                        {member.joinDate}
+                        {member.clubName ?? "—"}
                       </TableCell>
-                      <TableCell className="py-4">
-                        <Button
-                          variant="outline"
-                          id={`assign-role-${member.id}`}
-                          onClick={() => {
-                            setAssignTarget(member);
-                            setSelectedRole(member.role);
-                          }}
-                          className="border-outline-variant text-on-surface-variant hover:bg-surface-variant font-label-sm text-label-sm h-8 px-3"
-                        >
-                          <span className="material-symbols-outlined text-[16px] mr-1">manage_accounts</span>
-                          Assign Role
-                        </Button>
+                      <TableCell className="py-4 font-body-md text-body-md text-on-surface-variant">
+                        {member.lastActive
+                          ? new Date(member.lastActive).toLocaleDateString("en-IN")
+                          : "Never"}
                       </TableCell>
                     </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </section>
         </div>
       </div>
 
-      {/* Assign Role Dialog */}
+      {/* Assign Role Dialog (member detail view) */}
       <Dialog open={!!assignTarget} onOpenChange={(open) => !open && setAssignTarget(null)}>
         <DialogContent className="max-w-md bg-surface border-outline-variant">
           <DialogHeader>
             <DialogTitle className="font-headline-md text-headline-md text-on-surface">
-              Assign Role
+              Member Details
             </DialogTitle>
             <DialogDescription className="font-body-md text-body-md text-on-surface-variant">
-              Update <span className="font-semibold text-on-surface">{assignTarget?.name}</span>&apos;s role within your organisation.
+              {assignTarget?.firstName} {assignTarget?.lastName}
             </DialogDescription>
           </DialogHeader>
-
-          <div className="space-y-5 py-2">
-            {/* Event Scope */}
-            <div className="space-y-2">
-              <Label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">
-                Scoped to Event (Optional)
-              </Label>
-              <select
-                id="assign-event-scope"
-                value={selectedEvent}
-                onChange={(e) => setSelectedEvent(e.target.value)}
-                className="w-full h-10 px-3 border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-              >
-                <option value="">Platform-wide (all events)</option>
-                {mockOrgEvents.map((evt) => (
-                  <option key={evt.id} value={evt.id}>{evt.title}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Role Selection */}
-            <div className="space-y-2">
-              <Label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">
-                New Role
-              </Label>
-              <div className="grid grid-cols-2 gap-2">
-                {ROLES.map((role) => (
-                  <label
-                    key={role}
-                    className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                      selectedRole === role
-                        ? "border-primary bg-primary/5"
-                        : "border-outline-variant hover:bg-surface-container-low"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="role"
-                      value={role}
-                      checked={selectedRole === role}
-                      onChange={() => setSelectedRole(role)}
-                      className="mt-0.5"
-                    />
-                    <div>
-                      <p className="font-body-md text-on-surface font-semibold">{role}</p>
-                      <p className="font-label-sm text-label-sm text-on-surface-variant">
-                        {role === "Admin" && "Full access"}
-                        {role === "Event Manager" && "Manage events"}
-                        {role === "Co-Organiser" && "Limited create"}
-                        {role === "Observer" && "View only"}
-                      </p>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
-
           <div className="flex gap-3 pt-2">
             <Button
               variant="outline"
               onClick={() => setAssignTarget(null)}
               className="flex-1 border-outline-variant text-on-surface-variant"
             >
-              Cancel
-            </Button>
-            <Button
-              id="confirm-assign-role-btn"
-              onClick={handleAssign}
-              className="flex-1 bg-primary text-on-primary hover:bg-primary/90"
-            >
-              Confirm Role
+              Close
             </Button>
           </div>
         </DialogContent>
@@ -309,14 +234,14 @@ export default function OrgMembersPage() {
               Invite Member
             </DialogTitle>
             <DialogDescription className="font-body-md text-body-md text-on-surface-variant">
-              Send an invitation to join your organisation.
+              Share your organisation&apos;s sign-up link or ask members to register directly on the platform.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="invite-email" className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">
+              <p className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">
                 Institutional Email
-              </Label>
+              </p>
               <Input
                 id="invite-email"
                 type="email"
@@ -325,14 +250,6 @@ export default function OrgMembersPage() {
                 onChange={(e) => setInviteEmail(e.target.value)}
                 className="border-outline-variant focus-visible:ring-primary"
               />
-            </div>
-            <div className="space-y-2">
-              <Label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">
-                Initial Role
-              </Label>
-              <select className="w-full h-10 px-3 border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:ring-2 focus:ring-primary/30">
-                {ROLES.map((r) => <option key={r}>{r}</option>)}
-              </select>
             </div>
           </div>
           <div className="flex gap-3 pt-2">

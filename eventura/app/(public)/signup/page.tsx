@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { authApi, collegesApi, SignupDto } from '@/lib/api/auth.api';
+import { authApi, SignupDto } from '@/lib/api/auth.api';
+import CollegeSearch from '@/components/ui/CollegeSearch';
 
 type RoleKey = 'ATTENDEE' | 'COLLEGE_ADMIN' | 'CLUB_PRESIDENT';
 
@@ -36,7 +37,6 @@ const roles = [
   },
 ];
 
-interface College { id: string; name: string; domain: string; }
 
 export default function SignupPage() {
   const router = useRouter();
@@ -52,17 +52,10 @@ export default function SignupPage() {
   const [collegeDomain, setCollegeDomain] = useState('');
   const [clubName, setClubName] = useState('');
   const [collegeId, setCollegeId] = useState('');
-  const [approvedColleges, setApprovedColleges] = useState<College[]>([]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [apiError, setApiError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    if (selectedRole === 'CLUB_PRESIDENT') {
-      collegesApi.getApproved().then((res) => setApprovedColleges(res.data.data || [])).catch(() => {});
-    }
-  }, [selectedRole]);
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
@@ -247,13 +240,15 @@ export default function SignupPage() {
                 {selectedRole === 'CLUB_PRESIDENT' && (
                   <>
                     <div className={fieldClass}>
-                      <label htmlFor="collegeSelect" className={labelClass}>Your College</label>
-                      <select id="collegeSelect" value={collegeId} onChange={e => setCollegeId(e.target.value)} className={inputClass}>
-                        <option value="">Select your college…</option>
-                        {approvedColleges.map(c => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                      </select>
+                      <label htmlFor="collegeSearch" className={labelClass}>Your College</label>
+                      <CollegeSearch
+                        value={collegeId}
+                        onChange={(id, name) => {
+                          setCollegeId(id);
+                          setCollegeName(name);
+                        }}
+                        placeholder="Search your college (e.g. IIT Bombay, Woxsen...)"
+                      />
                       {errors.collegeId && <p className="font-body-sm text-body-sm text-error">{errors.collegeId}</p>}
                     </div>
                     <div className={fieldClass}>

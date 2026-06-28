@@ -1,20 +1,24 @@
 import { Router } from 'express';
-import { authRateLimiter } from '@middleware/rateLimiter.middleware';
+import { authRateLimiter, sessionRateLimiter } from '@middleware/rateLimiter.middleware';
+import { authMiddleware } from '@middleware/auth.middleware';
 import * as authController from './auth.controller';
 
 const router = Router();
 
-// Strict rate limiting on all auth routes (10 req/min per IP)
-router.use(authRateLimiter);
+// ── Session management — relaxed limit (60/min) ──────────────────────────────
+// These are called on every page load by AuthInitializer, not brute-force targets.
+router.post('/refresh', sessionRateLimiter, authController.refreshToken);
+router.get('/me', sessionRateLimiter, authMiddleware, authController.getMe);
 
-router.post('/signup', authController.signup);
-router.post('/verify-email', authController.verifyEmail);
-router.post('/login', authController.login);
-router.post('/refresh', authController.refreshToken);
-router.post('/logout', authController.logout);
-router.get('/status', authController.getApprovalStatus);
-router.post('/context-switch', authController.contextSwitch);
-router.post('/forgot-password', authController.forgotPassword);
-router.post('/reset-password', authController.resetPassword);
+// ── Sensitive auth endpoints — strict limit (10/min) ─────────────────────────
+// Brute-force sensitive: login, signup, OTP verification, password reset.
+router.post('/signup', authRateLimiter, authController.signup);
+router.post('/verify-email', authRateLimiter, authController.verifyEmail);
+router.post('/login', authRateLimiter, authController.login);
+router.post('/logout', authRateLimiter, authController.logout);
+router.get('/status', authRateLimiter, authController.getApprovalStatus);
+router.post('/context-switch', authRateLimiter, authController.contextSwitch);
+router.post('/forgot-password', authRateLimiter, authController.forgotPassword);
+router.post('/reset-password', authRateLimiter, authController.resetPassword);
 
 export default router;
