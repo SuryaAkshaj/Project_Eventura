@@ -16,6 +16,7 @@ export async function generateCertificate(registrationId: string, requestedBy: s
         include: {
           college: { select: { name: true } },
           club: { select: { name: true } },
+          createdBy: { select: { firstName: true, lastName: true } },
         }
       },
       certificate: true,
@@ -48,9 +49,14 @@ export async function generateCertificate(registrationId: string, requestedBy: s
 
   // 6. Build HTML template data
   const attendeeName = `${registration.user.firstName} ${registration.user.lastName}`;
-  const organisingBody = registration.event.club
-    ? `${registration.event.club.name}, ${registration.event.college.name}`
-    : registration.event.college.name;
+  let organisingBody = 'Eventura Creator';
+  if (registration.event.college) {
+    organisingBody = registration.event.club
+      ? `${registration.event.club.name}, ${registration.event.college.name}`
+      : registration.event.college.name;
+  } else if (registration.event.createdBy) {
+    organisingBody = `${registration.event.createdBy.firstName} ${registration.event.createdBy.lastName}`;
+  }
   const eventDate = new Date(registration.event.startDate).toLocaleDateString('en-IN', {
     day: 'numeric',
     month: 'long',
@@ -127,6 +133,9 @@ export async function generateCertificate(registrationId: string, requestedBy: s
     data: {
       userId: requestedBy,
       action: 'CERTIFICATE_GENERATED',
+      resourceType: 'CERTIFICATE',
+      resourceId: certificateId,
+      result: 'SUCCESS',
       details: { certificateId, registrationId, attendeeName }
     }
   });
@@ -181,6 +190,7 @@ export async function verifyCertificate(certificateId: string) {
             include: {
               college: { select: { name: true } },
               club: { select: { name: true } },
+              createdBy: { select: { firstName: true, lastName: true } },
             }
           }
         }
@@ -198,9 +208,13 @@ export async function verifyCertificate(certificateId: string) {
       id: certificate.id,
       attendeeName: `${certificate.registration.user.firstName} ${certificate.registration.user.lastName}`,
       eventTitle: certificate.registration.event.title,
-      organisingBody: certificate.registration.event.club
-        ? `${certificate.registration.event.club.name}, ${certificate.registration.event.college.name}`
-        : certificate.registration.event.college.name,
+      organisingBody: certificate.registration.event.college
+        ? (certificate.registration.event.club
+            ? `${certificate.registration.event.club.name}, ${certificate.registration.event.college.name}`
+            : certificate.registration.event.college.name)
+        : (certificate.registration.event.createdBy 
+            ? `${certificate.registration.event.createdBy.firstName} ${certificate.registration.event.createdBy.lastName}`
+            : 'Eventura Creator'),
       eventDate: certificate.registration.event.startDate,
       issuedAt: certificate.issuedAt,
       blockchainHash: certificate.blockchainHash,

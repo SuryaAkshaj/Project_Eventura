@@ -15,8 +15,8 @@ export function requireRole(...roles: RoleName[]): RequestHandler {
       return;
     }
 
-    // JWT uses activeContext.role; fall back to collegeRole for type compat
-    const userRole = (req.user.activeContext as any).role ?? req.user.activeContext.collegeRole;
+    // JWT uses activeContext.role
+    const userRole = req.user.activeContext.role as RoleName;
     if (!roles.includes(userRole)) {
       forbidden(res, `Requires one of: ${roles.join(', ')}. Your role: ${userRole}`);
       return;

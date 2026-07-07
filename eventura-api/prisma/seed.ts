@@ -101,6 +101,14 @@ async function main() {
       website: 'https://iith.ac.in',
       address: 'Kandi, Sangareddy, Telangana 502284',
     },
+    {
+      name: 'Acme Corp',
+      domain: 'acmecorp.com',
+      logoUrl: null,
+      brandingColor: '#FF5733',
+      website: 'https://acmecorp.com',
+      address: '123 Innovation Drive, Silicon Valley, CA 94043',
+    },
   ];
 
   const collegeMap: Record<string, string> = {};
@@ -118,7 +126,7 @@ async function main() {
     });
     collegeMap[collegeData.name] = college.id;
   }
-  console.log('✅ 3 Colleges created (all APPROVED)');
+  console.log('✅ 4 Colleges created (all APPROVED)');
 
   // ── 4. Clubs ─────────────────────────────────────────────────────────────────
   console.log('Creating clubs...');
@@ -181,6 +189,8 @@ async function main() {
     { email: 'admin@iith.ac.in', firstName: 'Rajesh', lastName: 'Kumar', collegeKey: 'IIT Hyderabad', role: 'COLLEGE_ADMIN' },
     { email: 'president@iith.ac.in', firstName: 'Divya', lastName: 'Reddy', collegeKey: 'IIT Hyderabad', role: 'CLUB_PRESIDENT', clubName: 'IIT-H E-Cell' },
     { email: 'student@iith.ac.in', firstName: 'Vikram', lastName: 'Patel', collegeKey: 'IIT Hyderabad', role: 'ATTENDEE' },
+    // Acme Corp
+    { email: 'employee@acmecorp.com', firstName: 'Alice', lastName: 'Johnson', collegeKey: 'Acme Corp', role: 'ATTENDEE' },
   ];
 
   const userMap: Record<string, string> = {};
@@ -234,7 +244,7 @@ async function main() {
     });
   }
 
-  console.log('✅ 9 Users created with role assignments');
+  console.log('✅ 10 Users created with role assignments');
 
   // ── 6. Events ─────────────────────────────────────────────────────────────────
   console.log('Creating events...');

@@ -48,6 +48,10 @@ export default function AuthInitializer() {
 
         // Roll the middleware cookie forward so Next.js route guards pass.
         document.cookie = `eventura-auth=${newToken}; path=/; max-age=${15 * 60}; SameSite=Lax`;
+
+        // Set mode cookie for Open Mode routing
+        const accountMode = activeContext?.accountMode || 'COLLEGE';
+        document.cookie = `eventura-mode=${accountMode}; path=/; max-age=${7 * 24 * 60 * 60}`;
       } catch {
         // Refresh token is missing / expired — clear everything so the
         // middleware can redirect to /login on the next protected navigation.

@@ -17,6 +17,10 @@ export const signupSchema = z.object({
     .optional(),
   clubName: z.string().min(1).max(100).optional(),
   collegeId: z.string().uuid('Invalid college ID').optional(),
+  orgCategory: z.enum([
+    'UNIVERSITY', 'COMPANY', 'COMMUNITY', 'CREATOR',
+    'NGO', 'SPORTS', 'ENTERTAINMENT', 'GOVERNMENT'
+  ]).optional().default('UNIVERSITY'),
 }).superRefine((data, ctx) => {
   if (data.requestedRole === 'COLLEGE_ADMIN') {
     if (!data.collegeName) {

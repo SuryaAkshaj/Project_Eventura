@@ -9,7 +9,7 @@ export const registerForEvent = asyncHandler(async (req, res) => {
   const result = await registrationsService.registerForEvent(
     { eventId, idempotencyKey },
     req.user!.sub,
-    req.user!.activeContext.collegeId
+    req.user!.activeContext.collegeId!
   );
 
   if ((result as any).alreadyRegistered) {
@@ -45,7 +45,7 @@ export const cancelRegistration = asyncHandler(async (req, res) => {
 export const getEventAttendees = asyncHandler(async (req, res) => {
   const attendees = await registrationsService.getEventAttendees(
     req.params.eventId,
-    req.user!.activeContext.collegeId
+    req.user!.activeContext.collegeId!
   );
   return success(res, attendees);
 });

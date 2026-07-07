@@ -1,0 +1,61 @@
+import { Prisma } from '@prisma/client';
+
+export const EVENT_LIST_SELECT = {
+  id: true,
+  title: true,
+  startDate: true,
+  endDate: true,
+  venue: true,
+  onlineLink: true,
+  bannerUrl: true,
+  category: true,
+  eventType: true,
+  format: true,
+  status: true,
+  visibility: true,
+  isFree: true,
+  ticketPrice: true,
+  maxCapacity: true,
+  prizePool: true,
+  registrationDeadline: true,
+  teamSizeMin: true,
+  teamSizeMax: true,
+  accommodation: true,
+  festEdition: true,
+  parentEventId: true,
+  college: {
+    select: {
+      id: true,
+      name: true,
+      city: true,
+      state: true,
+      logoUrl: true,
+      slug: true,
+    },
+  },
+  club: { select: { id: true, name: true } },
+  _count: {
+    select: {
+      registrations: true,
+      bookmarks: true,
+      subEvents: true,
+    },
+  },
+} satisfies Prisma.EventSelect;
+
+export const EVENT_DETAIL_SELECT = {
+  ...EVENT_LIST_SELECT,
+  description: true,
+  competitionRules: true,
+  judgingCriteria: true,
+  submissionFormat: true,
+  accommodationInfo: true,
+  guestPerformers: true,
+  sponsorNames: true,
+  contactEmail: true,
+  contactPhone: true,
+  readinessScore: true,
+  publishedAt: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.EventSelect;

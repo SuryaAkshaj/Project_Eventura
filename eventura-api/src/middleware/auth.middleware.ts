@@ -42,11 +42,11 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     }
 
     // 4. Check EVENT_MANAGER role expiry in database
-    if (payload.activeContext.collegeRole === 'EVENT_MANAGER') {
+    if (payload.activeContext.role === 'EVENT_MANAGER') {
       const assignment = await prismaAdmin.roleAssignment.findFirst({
         where: {
           userId: payload.sub,
-          collegeId: payload.activeContext.collegeId,
+          collegeId: payload.activeContext.collegeId ?? undefined,
           status: 'APPROVED',
         },
         select: { expiresAt: true },
@@ -61,11 +61,18 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     // 5. Attach user to request
     req.user = payload;
 
+    // 5a. Extract request context for audit logging
+    req.ipAddress =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
+      || req.ip
+      || 'unknown';
+    req.userAgent = req.headers['user-agent'] || 'unknown';
+
     // 6. Set AsyncLocalStorage tenant context for Prisma
     const ctx = {
       collegeId: payload.activeContext.collegeId,
       userId: payload.sub,
-      role: payload.activeContext.collegeRole,
+      role: payload.activeContext.role,
     };
 
     tenantStorage.run(ctx, () => {
@@ -95,7 +102,7 @@ export async function optionalAuthMiddleware(req: Request, res: Response, next: 
     const ctx = {
       collegeId: payload.activeContext.collegeId,
       userId: payload.sub,
-      role: payload.activeContext.collegeRole,
+      role: payload.activeContext.role,
     };
 
     tenantStorage.run(ctx, () => next());

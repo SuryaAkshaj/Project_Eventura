@@ -129,10 +129,11 @@ router.get(
   authMiddleware,
   requireRole('COLLEGE_ADMIN', 'CLUB_PRESIDENT'),
   asyncHandler(async (req: Request, res: Response) => {
-    const { collegeId, clubId, collegeRole: role } = req.user!.activeContext;
+    const { collegeId, clubId, role } = req.user!.activeContext;
+    const cid = collegeId!;
 
     const where: any = {
-      collegeId,
+      collegeId: cid,
       status: 'APPROVED',
     };
 
@@ -194,7 +195,7 @@ router.post(
     }
 
     const event = await prismaAdmin.event.findFirst({
-      where: { id: eventId, collegeId },
+      where: { id: eventId, collegeId: collegeId! },
     });
     if (!event) {
       return res.status(404).json({
@@ -219,7 +220,7 @@ router.post(
         userId_roleId_collegeId_clubId: {
           userId,
           roleId: eventManagerRole.id,
-          collegeId,
+          collegeId: collegeId!,
           clubId: resolvedClubId as string,
         },
       },
@@ -230,7 +231,7 @@ router.post(
       create: {
         userId,
         roleId: eventManagerRole.id,
-        collegeId,
+        collegeId: collegeId!,
         clubId: resolvedClubId,
         status: 'APPROVED',
         expiresAt: new Date(event.endDate),
@@ -259,10 +260,11 @@ router.get(
   authMiddleware,
   requireRole('COLLEGE_ADMIN', 'CLUB_PRESIDENT'),
   asyncHandler(async (req: Request, res: Response) => {
-    const { collegeId, clubId, collegeRole: role } = req.user!.activeContext;
+    const { collegeId, clubId, role } = req.user!.activeContext;
+    const cid = collegeId!;
 
     const college = await prismaAdmin.college.findUnique({
-      where: { id: collegeId },
+      where: { id: cid },
       select: {
         id: true,
         name: true,
@@ -299,13 +301,14 @@ router.patch(
   authMiddleware,
   requireRole('COLLEGE_ADMIN', 'CLUB_PRESIDENT'),
   asyncHandler(async (req: Request, res: Response) => {
-    const { collegeId, clubId, collegeRole: role } = req.user!.activeContext;
+    const { collegeId, clubId, role } = req.user!.activeContext;
+    const cid = collegeId!;
     const { website, address, clubName, clubDescription } = req.body;
 
     // College Admin can update college details (name/domain changes require Super Admin)
     if (role === 'COLLEGE_ADMIN') {
       await prismaAdmin.college.update({
-        where: { id: collegeId },
+        where: { id: cid },
         data: {
           ...(website !== undefined && { website }),
           ...(address !== undefined && { address }),

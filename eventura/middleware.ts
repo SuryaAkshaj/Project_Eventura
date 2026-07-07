@@ -4,6 +4,7 @@ import type { NextRequest } from 'next/server';
 const PROTECTED_ATTENDEE = ['/dashboard', '/events', '/certificates', '/my-tickets', '/profile'];
 const PROTECTED_ORGANISER = ['/org'];
 const PROTECTED_ADMIN = ['/admin'];
+const PROTECTED_CREATOR = ['/creator'];
 
 // Only /login redirects away when already authenticated.
 // /signup stays accessible so users can create a second account or switch roles.
@@ -18,12 +19,14 @@ const ALWAYS_PUBLIC = [
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('eventura-auth')?.value;
+  const modeCookie = request.cookies.get('eventura-mode')?.value;
   const { pathname } = request.nextUrl;
 
   const isProtectedAttendee = PROTECTED_ATTENDEE.some((p) => pathname.startsWith(p));
   const isProtectedOrganiser = PROTECTED_ORGANISER.some((p) => pathname.startsWith(p));
   const isProtectedAdmin = PROTECTED_ADMIN.some((p) => pathname.startsWith(p));
-  const isProtected = isProtectedAttendee || isProtectedOrganiser || isProtectedAdmin;
+  const isProtectedCreator = PROTECTED_CREATOR.some((p) => pathname.startsWith(p));
+  const isProtected = isProtectedAttendee || isProtectedOrganiser || isProtectedAdmin || isProtectedCreator;
 
   const isAlwaysPublic = ALWAYS_PUBLIC.some((p) => pathname.startsWith(p));
   const isRedirectIfAuth = REDIRECT_IF_AUTHENTICATED.some((p) => pathname.startsWith(p));
@@ -38,8 +41,21 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // Mode-based routing: prevent Open Mode users from accessing /org/* and vice versa
+  if (token) {
+    if (pathname.startsWith('/creator') && modeCookie !== 'OPEN') {
+      return NextResponse.redirect(new URL('/org/dashboard', request.url));
+    }
+    if (pathname.startsWith('/org') && modeCookie === 'OPEN') {
+      return NextResponse.redirect(new URL('/creator/dashboard', request.url));
+    }
+  }
+
   // Redirect authenticated users away from login page only
   if (isRedirectIfAuth && token) {
+    if (modeCookie === 'OPEN') {
+      return NextResponse.redirect(new URL('/creator/dashboard', request.url));
+    }
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 

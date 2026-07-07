@@ -6,7 +6,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface TenantContext {
-  collegeId: string;
+  collegeId: string | null;
   userId: string;
   role: string;
 }
@@ -114,3 +114,16 @@ export const prisma = prismaAdmin.$extends({
     },
   },
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Slow query detection (development only)
+// ─────────────────────────────────────────────────────────────────────────────
+
+if (process.env.NODE_ENV === 'development') {
+  // @ts-expect-error — Prisma query event requires 'query' in log config (already set above)
+  prismaAdmin.$on('query', (e: any) => {
+    if (e.duration > 1000) {
+      console.warn(`\n🐢 SLOW QUERY (${e.duration}ms):\n${e.query}\nParams: ${e.params}\n`);
+    }
+  });
+}

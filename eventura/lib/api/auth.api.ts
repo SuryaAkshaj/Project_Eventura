@@ -10,6 +10,7 @@ export interface SignupDto {
   collegeDomain?: string;
   clubName?: string;
   collegeId?: string;
+  orgCategory?: string;
 }
 
 export interface LoginDto {

@@ -8,7 +8,7 @@ import { env } from '@config/env';
 import { logger } from '@shared/utils/logger';
 import { AppError } from '@shared/errors/AppError';
 import { sendOTPEmail, sendPasswordResetEmail } from '@shared/utils/email';
-import type { SignupDto, LoginDto, JwtPayload, TokenPair } from './auth.types';
+import type { SignupDto, LoginDto, JwtPayload, TokenPair, OrgLabels } from './auth.types';
 import { PERMISSIONS } from '@shared/constants/permissions';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -37,11 +37,81 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Dynamic org labels — maps orgCategory → contextual UI labels
+// ─────────────────────────────────────────────────────────────────────────────
+function getOrgLabels(orgCategory: string | null | undefined): OrgLabels {
+  const map: Record<string, OrgLabels> = {
+    UNIVERSITY: {
+      team: 'Club',
+      members: 'Students',
+      teamAdmin: 'Club President',
+      guests: 'Students',
+    },
+    COMPANY: {
+      team: 'Department',
+      members: 'Employees',
+      teamAdmin: 'Department Head',
+      guests: 'Clients',
+    },
+    COMMUNITY: {
+      team: 'Chapter',
+      members: 'Members',
+      teamAdmin: 'Chapter Lead',
+      guests: 'Guests',
+    },
+    CREATOR: {
+      team: 'Brand',
+      members: 'Fans',
+      teamAdmin: 'Creator',
+      guests: 'Subscribers',
+    },
+    NGO: {
+      team: 'Chapter',
+      members: 'Volunteers',
+      teamAdmin: 'Chapter Head',
+      guests: 'Donors',
+    },
+    GOVERNMENT: {
+      team: 'Division',
+      members: 'Staff',
+      teamAdmin: 'Division Head',
+      guests: 'Citizens',
+    },
+    SPORTS: {
+      team: 'Squad',
+      members: 'Athletes',
+      teamAdmin: 'Team Captain',
+      guests: 'Fans',
+    },
+    ENTERTAINMENT: {
+      team: 'Brand',
+      members: 'Artists',
+      teamAdmin: 'Manager',
+      guests: 'Fans',
+    },
+  };
+
+  return map[orgCategory || 'UNIVERSITY'] || {
+    team: 'Team',
+    members: 'Members',
+    teamAdmin: 'Team Admin',
+    guests: 'Guests',
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // generateTokenPair
 // ─────────────────────────────────────────────────────────────────────────────
 export async function generateTokenPair(
   user: { id: string; email: string },
-  activeContext: { role: string; collegeId: string | null; clubId: string | null }
+  activeContext: {
+    role: string;
+    collegeId: string | null;
+    clubId: string | null;
+    orgType?: string | null;
+    accountMode?: 'COLLEGE' | 'OPEN' | null;
+    labels?: OrgLabels | null;
+  }
 ): Promise<TokenPair> {
   const permissions = ROLE_PERMISSIONS[activeContext.role] ?? [];
 
@@ -52,7 +122,13 @@ export async function generateTokenPair(
     {
       sub: user.id,
       email: user.email,
-      activeContext: { ...activeContext, permissions },
+      activeContext: {
+        ...activeContext,
+        permissions,
+        orgType: activeContext.orgType ?? null,
+        accountMode: activeContext.accountMode ?? null,
+        labels: activeContext.labels ?? null,
+      },
       jti,
       iss: 'eventura-auth',
     } satisfies Omit<JwtPayload, 'iat' | 'exp'>,
@@ -91,6 +167,9 @@ export async function signup(dto: SignupDto) {
 
   const passwordHash = await bcrypt.hash(dto.password, 12);
 
+  // Determine account mode based on org category
+  const accountMode = dto.orgCategory === 'UNIVERSITY' || !dto.orgCategory ? 'COLLEGE' : 'OPEN';
+
   // Get the Role record for the requested role
   const roleRecord = await prismaAdmin.role.findUnique({
     where: { name: dto.requestedRole },
@@ -99,17 +178,31 @@ export async function signup(dto: SignupDto) {
     throw new AppError('ROLE_CONFIG_ERROR', 'Role configuration error', 500);
   }
 
-  // Create user
+  // Create user with accountMode and orgCategory
   const user = await prismaAdmin.user.create({
     data: {
       email: dto.email,
       passwordHash,
       firstName: dto.firstName,
       lastName: dto.lastName,
+      accountMode: accountMode as any,
+      orgCategory: dto.orgCategory || 'UNIVERSITY',
     },
   });
 
-  if (dto.requestedRole === 'ATTENDEE') {
+  if (accountMode === 'OPEN') {
+    // ── Open Mode: instant approval, no college/club required ──────────────
+    // Use the general Eventura college as a fallback for role assignment
+    const fallbackCollegeId = await getOrCreateDefaultCollegeId();
+    await prismaAdmin.roleAssignment.create({
+      data: {
+        userId: user.id,
+        roleId: roleRecord.id,
+        collegeId: fallbackCollegeId,
+        status: 'APPROVED',
+      },
+    });
+  } else if (dto.requestedRole === 'ATTENDEE') {
     // Find college by email domain
     const domain = dto.email.split('@')[1];
     const college = await prismaAdmin.college.findUnique({ where: { domain } });
@@ -127,6 +220,7 @@ export async function signup(dto: SignupDto) {
       data: {
         name: dto.collegeName!,
         domain: dto.collegeDomain!,
+        orgCategory: dto.orgCategory || 'UNIVERSITY',
         approvalStatus: 'PENDING',
       },
     });
@@ -201,6 +295,29 @@ export async function verifyEmail(userId: string, otp: string): Promise<void> {
   });
 
   await redis.del(`otp:${userId}`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper — resolve orgCategory and labels for a given context
+// ─────────────────────────────────────────────────────────────────────────────
+async function resolveOrgLabels(
+  collegeId: string | null,
+  user: { accountMode: string; orgCategory: string | null },
+) {
+  // Fetch college orgCategory if we have a collegeId
+  const college = collegeId
+    ? await prismaAdmin.college.findUnique({
+        where: { id: collegeId },
+        select: { orgCategory: true },
+      })
+    : null;
+
+  const orgCategory = college?.orgCategory ||
+    (user.accountMode === 'OPEN' ? user.orgCategory : 'UNIVERSITY');
+
+  const labels = getOrgLabels(orgCategory);
+
+  return { orgType: orgCategory || 'UNIVERSITY', labels };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -308,10 +425,14 @@ export async function login(dto: LoginDto) {
 
   // Single approved role — auto-select
   const ra = approved[0];
+  const { orgType, labels } = await resolveOrgLabels(ra.collegeId, user as any);
   const activeContext = {
     role: ra.role.name,
     collegeId: ra.collegeId,
     clubId: ra.clubId,
+    orgType,
+    accountMode: user.accountMode as 'COLLEGE' | 'OPEN',
+    labels,
   };
   const tokenPair = await generateTokenPair(user, activeContext);
 
@@ -326,7 +447,7 @@ export async function login(dto: LoginDto) {
 // ─────────────────────────────────────────────────────────────────────────────
 // refreshToken
 // ─────────────────────────────────────────────────────────────────────────────
-export async function refreshToken(token: string): Promise<TokenPair & { activeContext: { role: string; collegeId: string | null; clubId: string | null } }> {
+export async function refreshToken(token: string): Promise<TokenPair & { activeContext: { role: string; collegeId: string | null; clubId: string | null; orgType: string | null; accountMode: 'COLLEGE' | 'OPEN' | null; labels: OrgLabels | null } }> {
   let payload: any;
   try {
     payload = jwt.verify(token, env.JWT_REFRESH_SECRET);
@@ -372,9 +493,17 @@ export async function refreshToken(token: string): Promise<TokenPair & { activeC
   });
 
   const ra = roleAssignments[0];
-  const activeContext = ra
+  const baseContext = ra
     ? { role: ra.role.name, collegeId: ra.collegeId, clubId: ra.clubId }
     : { role: 'ATTENDEE', collegeId: null, clubId: null };
+
+  const { orgType, labels } = await resolveOrgLabels(baseContext.collegeId, user as any);
+  const activeContext = {
+    ...baseContext,
+    orgType,
+    accountMode: user.accountMode as 'COLLEGE' | 'OPEN',
+    labels,
+  };
 
   // Rotate refresh token: remove old session fingerprint, issue new token
   await redis.hdel(`refresh:sessions:${user.id}`, fingerprint);
@@ -459,10 +588,14 @@ export async function contextSwitch(
   }
 
   const user = await prismaAdmin.user.findUniqueOrThrow({ where: { id: userId } });
+  const { orgType, labels } = await resolveOrgLabels(ra.collegeId, user as any);
   const activeContext = {
     role: ra.role.name,
     collegeId: ra.collegeId,
     clubId: ra.clubId,
+    orgType,
+    accountMode: user.accountMode as 'COLLEGE' | 'OPEN',
+    labels,
   };
 
   return generateTokenPair(user, activeContext);

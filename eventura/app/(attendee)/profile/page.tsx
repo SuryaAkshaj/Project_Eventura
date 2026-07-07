@@ -61,13 +61,20 @@ export default function ProfilePage() {
 
   const initials = `${profile?.firstName?.[0] || ''}${profile?.lastName?.[0] || ''}`.toUpperCase() || '?';
   const fullName = `${profile?.firstName || ''} ${profile?.lastName || ''}`.trim() || 'User';
-  const roleDisplay = (activeRole ?? 'ATTENDEE').replace(/_/g, ' ');
+  const roleLabels: Record<string, string> = {
+    SUPER_ADMIN: 'Super Admin',
+    COLLEGE_ADMIN: 'College Admin',
+    CLUB_PRESIDENT: 'Club President',
+    EVENT_MANAGER: 'Event Manager',
+    ATTENDEE: 'Attendee',
+  };
+  const roleDisplay = roleLabels[activeRole ?? 'ATTENDEE'] || (activeRole ?? 'ATTENDEE').replace(/_/g, ' ');
   const roleColor: Record<string, string> = {
-    'SUPER ADMIN': 'text-purple-600',
-    'COLLEGE ADMIN': 'text-blue-600',
-    'CLUB PRESIDENT': 'text-indigo-600',
-    'EVENT MANAGER': 'text-amber-600',
-    'ATTENDEE': 'text-green-600',
+    'Super Admin': 'text-purple-600',
+    'College Admin': 'text-blue-600',
+    'Club President': 'text-indigo-600',
+    'Event Manager': 'text-amber-600',
+    'Attendee': 'text-green-600',
   };
 
   return (
@@ -175,7 +182,7 @@ export default function ProfilePage() {
           </div>
 
           <p className="text-xs text-gray-400 text-center mt-6">
-            To update your name or college details, contact{' '}
+            To update your name or organisation details, contact{' '}
             <a href="mailto:support@eventura.app" className="text-indigo-500 hover:underline">
               support@eventura.app
             </a>

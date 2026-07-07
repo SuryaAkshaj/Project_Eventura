@@ -5,41 +5,28 @@ import { RoleName } from '@prisma/client';
  * Identifies which college+club the user is currently operating as.
  */
 export interface ActiveContext {
-  collegeId: string;
-  collegeRole: RoleName;
-  clubId?: string;
+  role: string;
+  collegeId: string | null;
+  clubId: string | null;
   permissions: string[];
+  orgType?: string | null;
+  accountMode?: 'COLLEGE' | 'OPEN' | null;
+  labels?: Record<string, string> | null;
 }
 
-/**
- * Full JWT access token payload
- */
 export interface JwtPayload {
-  /** User's database UUID */
   sub: string;
-
-  /** User's email */
   email: string;
-
-  /** User's display name */
-  name: string;
-
-  /** JWT ID — used for blacklisting on logout */
+  name?: string;
   jti: string;
-
-  /** The active context (which college/role the user is acting as right now) */
   activeContext: ActiveContext;
-
-  /** All role assignments — for role switcher in the frontend */
-  allRoles: Array<{
-    role: RoleName;
+  allRoles?: Array<{
+    role: string;
     collegeId: string;
     collegeName: string;
     clubId?: string;
     clubName?: string;
   }>;
-
-  /** Standard JWT fields */
   iat?: number;
   exp?: number;
 }

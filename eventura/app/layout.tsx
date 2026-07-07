@@ -4,6 +4,7 @@ import { RoleProvider } from "@/lib/context/RoleContext";
 import QueryProvider from "@/lib/providers/QueryProvider";
 import PageTransition from "@/components/ui/PageTransition";
 import AuthInitializer from "@/components/auth/AuthInitializer";
+import CookieConsent from "@/components/ui/CookieConsent";
 
 export const metadata: Metadata = {
   title: {
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <PageTransition />
           <AuthInitializer />
           <RoleProvider>{children}</RoleProvider>
+          <CookieConsent />
         </QueryProvider>
       </body>
     </html>

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authMiddleware } from '@middleware/auth.middleware';
+import { scanRateLimiter } from '@middleware/rateLimiter.middleware';
 import { asyncHandler } from '@shared/utils/asyncHandler';
 import { success, error as apiError } from '@shared/utils/apiResponse';
 import { prismaAdmin } from '@config/database';
@@ -54,7 +55,7 @@ router.get('/:registrationId', authMiddleware, asyncHandler(async (req, res) => 
 }));
 
 // POST /qr/validate — validate a QR scan (Event Manager only)
-router.post('/validate', authMiddleware, asyncHandler(async (req, res) => {
+router.post('/validate', authMiddleware, scanRateLimiter, asyncHandler(async (req, res) => {
   const { qrToken, eventId } = req.body;
 
   if (!qrToken || !eventId) {

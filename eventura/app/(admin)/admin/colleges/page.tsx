@@ -98,7 +98,7 @@ export default function CollegesVerificationPage() {
                 )}
                 {selectedItem.college && (
                   <div className="flex justify-between">
-                    <span className="uppercase font-label-sm">Parent College</span>
+                    <span className="uppercase font-label-sm">Parent Organisation</span>
                     <span>{selectedItem.college.name}</span>
                   </div>
                 )}
@@ -185,7 +185,7 @@ export default function CollegesVerificationPage() {
           <div className="flex justify-between items-end mb-lg">
             <div>
               <h2 className="font-headline-lg text-headline-lg text-on-surface mb-xs">Verification Queue</h2>
-              <p className="font-body-md text-body-md text-on-surface-variant">Review and approve college and student club credentials.</p>
+              <p className="font-body-md text-body-md text-on-surface-variant">Review and approve organisation and team credentials.</p>
             </div>
           </div>
 
@@ -195,7 +195,7 @@ export default function CollegesVerificationPage() {
               onClick={() => setActiveTab("colleges")}
               className={`flex items-center gap-2 px-4 py-2 font-label-sm text-label-sm border-b-2 transition-colors ${activeTab === "colleges" ? "border-primary text-primary" : "border-transparent text-on-surface-variant hover:text-on-surface"}`}
             >
-              Colleges
+              Organisations
               {pendingColleges.length > 0 && (
                 <span className="bg-error-container text-on-error-container text-[11px] px-1.5 py-0.5 rounded-full font-bold">{pendingColleges.length}</span>
               )}
@@ -204,7 +204,7 @@ export default function CollegesVerificationPage() {
               onClick={() => setActiveTab("clubs")}
               className={`flex items-center gap-2 px-4 py-2 font-label-sm text-label-sm border-b-2 transition-colors ${activeTab === "clubs" ? "border-primary text-primary" : "border-transparent text-on-surface-variant hover:text-on-surface"}`}
             >
-              Clubs
+              Teams
               {pendingClubs.length > 0 && (
                 <span className="bg-error-container text-on-error-container text-[11px] px-1.5 py-0.5 rounded-full font-bold">{pendingClubs.length}</span>
               )}
@@ -228,7 +228,7 @@ export default function CollegesVerificationPage() {
                   <thead>
                     <tr className="border-b border-outline-variant bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase">
                       <th className="py-3 px-6 font-semibold">Organization</th>
-                      {activeTab === "clubs" && <th className="py-3 px-6 font-semibold">Parent College</th>}
+                      {activeTab === "clubs" && <th className="py-3 px-6 font-semibold">Parent Organisation</th>}
                       <th className="py-3 px-6 font-semibold">Submitted By</th>
                       <th className="py-3 px-6 font-semibold">Date</th>
                       <th className="py-3 px-6 font-semibold">Actions</th>
@@ -281,7 +281,7 @@ export default function CollegesVerificationPage() {
               </div>
             )}
             <div className="bg-surface-container-low border-t border-outline-variant p-4 flex justify-between items-center">
-              <span className="text-label-sm text-on-surface-variant">Showing {currentList.length} pending {activeTab}</span>
+              <span className="text-label-sm text-on-surface-variant">Showing {currentList.length} pending {activeTab === "colleges" ? "organisations" : "teams"}</span>
             </div>
           </div>
         </div>

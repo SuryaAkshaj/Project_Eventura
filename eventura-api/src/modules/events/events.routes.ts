@@ -10,6 +10,53 @@ import * as eventsService from './events.service';
 
 const router = Router();
 
+/**
+ * @swagger
+ * /events:
+ *   get:
+ *     tags: [Events]
+ *     summary: Browse published events
+ *     security: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 12
+ *           maximum: 100
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *           enum: [Technical, Cultural, Workshop, Networking, Entrepreneurship]
+ *       - in: query
+ *         name: state
+ *         schema:
+ *           type: string
+ *           example: Telangana
+ *       - in: query
+ *         name: eventType
+ *         schema:
+ *           type: string
+ *           enum: [FEST, COMPETITION, WORKSHOP, SEMINAR, OTHER]
+ *       - in: query
+ *         name: closingSoon
+ *         schema:
+ *           type: boolean
+ *     responses:
+ *       200:
+ *         description: List of events
+ */
+
 // ─── Organiser-only routes MUST come before /:id to avoid route param capture ─
 
 // GET /events/org/my-events — all events for my college/club (all statuses)
@@ -18,6 +65,45 @@ router.get(
   authMiddleware,
   requireRole('COLLEGE_ADMIN', 'CLUB_PRESIDENT'),
   eventsController.getOrgEvents,
+);
+
+// ─── Open Mode Routes ─────────────────────────────────────────────────────────
+
+// POST /events/open — create event in Open Mode (no college needed)
+router.post(
+  '/open',
+  authMiddleware,
+  asyncHandler(async (req, res) => {
+    // Verify user is in OPEN mode
+    if (req.user!.activeContext.accountMode !== 'OPEN') {
+      throw AppError.forbidden('This endpoint is for Open Mode users only');
+    }
+    const event = await eventsService.createEvent(req.body, {
+      ...req.user!.activeContext,
+      userId: req.user!.sub,
+    });
+    return res.status(201).json({
+      success: true,
+      data: event,
+      message: 'Event created successfully'
+    });
+  })
+);
+
+// GET /events/my-open-events — get Open Mode user's events
+router.get(
+  '/my-open-events',
+  authMiddleware,
+  asyncHandler(async (req, res) => {
+    const events = await prismaAdmin.event.findMany({
+      where: { createdById: req.user!.sub },
+      include: {
+        _count: { select: { registrations: true } }
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return res.json({ success: true, data: events });
+  })
 );
 
 // ─── Public / Attendee Routes ─────────────────────────────────────────────────

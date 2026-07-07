@@ -168,7 +168,7 @@ export default function OrgDashboardPage() {
         <section className="grid grid-cols-1 md:grid-cols-3 gap-md">
           {[
             { href: "/org/payments", icon: "payments", title: "Payouts & Finance", desc: "View revenue, withdrawals and bank connections." },
-            { href: "/org/events/create", icon: "add_circle", title: "Create New Event", desc: "Start building your next campus event." },
+            { href: "/org/events/create", icon: "add_circle", title: "Create New Event", desc: "Start building your next event." },
             { href: "/org/members", icon: "group", title: "Team Members", desc: "Manage your organiser team and permissions." },
           ].map((item) => (
             <Link key={item.href} href={item.href} className="bg-white border border-outline-variant rounded-xl p-4 shadow-sm hover:shadow-md hover:border-primary transition-all group flex items-start gap-4">

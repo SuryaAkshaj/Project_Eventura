@@ -2,9 +2,9 @@ import Link from 'next/link';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Colleges on Eventura — Discover Events from Top Indian Colleges',
+  title: 'Organisations on Eventura — Discover Events Across India',
   description:
-    'Browse events from IITs, NITs, IIITs, IIMs and top private colleges across India.',
+    'Browse events from universities, companies, communities, and organisations across India.',
 };
 
 interface College {
@@ -89,7 +89,7 @@ export default async function CollegesPage() {
               href="/colleges"
               className="font-body-md text-body-md text-primary font-semibold transition-colors"
             >
-              Colleges
+              Organisations
             </Link>
             <Link
               href="/events"
@@ -128,11 +128,11 @@ export default async function CollegesPage() {
             National Discovery Platform
           </div>
           <h1 className="font-display-lg text-display-lg text-on-primary mb-3">
-            Colleges on Eventura
+            Organisations on Eventura
           </h1>
           <p className="font-body-lg text-body-lg text-primary-fixed-dim max-w-2xl mx-auto">
-            Discover events from {colleges.length}+ colleges across India — IITs, NITs, IIMs
-            and more
+            Discover events from {colleges.length}+ organisations across India — universities, companies,
+            communities and more
           </p>
         </div>
       </div>
@@ -143,7 +143,7 @@ export default async function CollegesPage() {
           <div className="text-center py-20">
             <p className="text-4xl mb-3">🏫</p>
             <p className="font-body-lg text-body-lg text-on-surface-variant">
-              No colleges yet — check back soon
+              No organisations yet — check back soon
             </p>
           </div>
         ) : (
@@ -206,16 +206,16 @@ export default async function CollegesPage() {
       <div className="bg-surface border-t border-outline-variant py-12 px-4 text-center">
         <div className="max-w-2xl mx-auto">
           <h2 className="font-headline-md text-headline-md text-on-surface mb-3">
-            Don&apos;t see your college?
+            Don&apos;t see your organisation?
           </h2>
           <p className="font-body-md text-body-md text-on-surface-variant mb-6">
-            Register as a College Admin to add your institution to Eventura.
+            Register as an Organisation Admin to add your organisation to Eventura.
           </p>
           <Link
             href="/signup"
             className="inline-flex items-center gap-2 bg-primary text-on-primary font-label-sm text-label-sm px-6 py-3 rounded-xl hover:bg-primary/90 transition-colors shadow-sm"
           >
-            Add Your College
+            Add Your Organisation
             <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
           </Link>
         </div>

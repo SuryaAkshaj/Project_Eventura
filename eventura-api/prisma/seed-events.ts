@@ -139,5 +139,6 @@ async function seedEvents() {
 seedEvents().catch(async (err) => {
   console.error('Seed failed:', err);
   await prisma.$disconnect();
+  const process = require('process');
   process.exit(1);
 });

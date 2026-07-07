@@ -20,6 +20,10 @@ import certificatesRoutes from '@modules/certificates/certificates.routes';
 import bookmarksRoutes from '@modules/bookmarks/bookmarks.routes';
 import { logger } from '@shared/utils/logger';
 import { sanitizeObject } from '@shared/utils/sanitize';
+import { prisma, prismaAdmin } from '@config/database';
+import { redis } from '@config/redis';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from '@config/swagger';
 
 const app = express();
 
@@ -31,35 +35,52 @@ const app = express();
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "https://checkout.razorpay.com"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https://res.cloudinary.com"],
-      connectSrc: ["'self'", "https://api.razorpay.com"],
-      frameSrc: ["https://api.razorpay.com"],
-    }
+      defaultSrc:  ["'self'"],
+      scriptSrc:   ["'self'", "https://checkout.razorpay.com"],
+      styleSrc:    ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc:     ["'self'", "https://fonts.gstatic.com"],
+      imgSrc:      ["'self'", "data:", "https://res.cloudinary.com"],
+      connectSrc:  ["'self'", "https://api.razorpay.com", "https://lumberjack.razorpay.com"],
+      frameSrc:    ["'none'"],
+      objectSrc:   ["'none'"],
+      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
+    },
   },
-  crossOriginEmbedderPolicy: false,
   hsts: {
-    maxAge: 31536000,
+    maxAge: 31_536_000,
     includeSubDomains: true,
     preload: true,
-  }
+  },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  crossOriginEmbedderPolicy: false, // Required for Razorpay iframe
 }));
 
+// Additional headers not covered by Helmet
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+  next();
+});
+
 // 2. CORS — strict origin whitelist
-const allowedOrigins = env.NODE_ENV === 'production'
-  ? [env.CLIENT_URL]
+const allowedOrigins: (string | RegExp)[] = env.NODE_ENV === 'production'
+  ? [
+      env.CLIENT_URL,
+      /https:\/\/eventura-.*\.vercel\.app$/,   // Vercel preview deployments
+    ]
   : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'];
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
+    if (!origin) return callback(null, true); // Allow curl/Postman
+
+    const allowed = allowedOrigins.some(o =>
+      typeof o === 'string' ? o === origin : o.test(origin)
+    );
+
+    if (allowed) callback(null, true);
+    else callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -97,6 +118,19 @@ app.use(requestLogger);
 
 // 6. Rate limiting
 app.use(generalRateLimiter);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SWAGGER API DOCS
+// ─────────────────────────────────────────────────────────────────────────────
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customSiteTitle: 'Eventura API Docs',
+  customCss: '.swagger-ui .topbar { background-color: #2E3192; }',
+}));
+
+app.get('/api/docs.json', (_req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ROUTES
@@ -147,21 +181,57 @@ app.use(errorHandler);
 // START SERVER
 // ─────────────────────────────────────────────────────────────────────────────
 const server = app.listen(env.PORT, () => {
-  logger.info(`🚀 Eventura API running on http://localhost:${env.PORT}`);
-  logger.info(`   Environment: ${env.NODE_ENV}`);
-  logger.info(`   Health check: http://localhost:${env.PORT}/health`);
+  logger.info(`✅ Server running on port ${env.PORT}`);
+  logger.info(`✅ Environment: ${env.NODE_ENV}`);
 });
 
-// Graceful shutdown
-const shutdown = async () => {
-  logger.info('Shutting down gracefully...');
-  server.close(() => {
+// ─── Graceful Shutdown ────────────────────────────────────────────────────
+let isShuttingDown = false;
+
+const shutdown = async (signal: string): Promise<void> => {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+
+  logger.info(`${signal} received — starting graceful shutdown`);
+
+  // Stop accepting new connections immediately
+  server.close(async () => {
     logger.info('HTTP server closed');
-    process.exit(0);
+
+    try {
+      await prisma.$disconnect();
+      await prismaAdmin.$disconnect();
+      logger.info('PostgreSQL disconnected');
+
+      await redis.quit();
+      logger.info('Redis disconnected');
+
+      logger.info('✅ Graceful shutdown complete');
+      process.exit(0);
+    } catch (err) {
+      logger.error('Error during shutdown:', err);
+      process.exit(1);
+    }
   });
+
+  // Force kill after 30 seconds
+  setTimeout(() => {
+    logger.error('Forced shutdown — 30s timeout exceeded');
+    process.exit(1);
+  }, 30_000).unref();
 };
 
-process.on('SIGTERM', shutdown);
-process.on('SIGINT', shutdown);
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT',  () => shutdown('SIGINT'));
+
+process.on('unhandledRejection', (reason: unknown) => {
+  logger.error('Unhandled Promise Rejection:', reason);
+  if (env.NODE_ENV === 'development') throw reason;
+});
+
+process.on('uncaughtException', (err: Error) => {
+  logger.error('Uncaught Exception:', err);
+  shutdown('uncaughtException');
+});
 
 export default app;

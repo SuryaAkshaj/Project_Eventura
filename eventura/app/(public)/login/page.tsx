@@ -54,11 +54,19 @@ function LoginPageContent() {
       // Set auth cookie for middleware (15 min expiry)
       document.cookie = `eventura-auth=${accessToken}; path=/; max-age=${15 * 60}; SameSite=Lax`;
 
-      const role = activeContext?.role;
-      if (role === 'ATTENDEE') router.push('/dashboard');
-      else if (role === 'COLLEGE_ADMIN' || role === 'CLUB_PRESIDENT' || role === 'EVENT_MANAGER') router.push('/org/dashboard');
-      else if (role === 'SUPER_ADMIN') router.push('/admin/dashboard');
-      else router.push('/dashboard');
+      // Set mode cookie for routing
+      const accountMode = activeContext?.accountMode || 'COLLEGE';
+      document.cookie = `eventura-mode=${accountMode}; path=/; max-age=${7 * 24 * 60 * 60}`;
+
+      // Redirect based on mode + role
+      if (accountMode === 'OPEN') {
+        router.push('/creator/dashboard');
+      } else {
+        const role = activeContext?.role;
+        if (role === 'SUPER_ADMIN') router.push('/admin/dashboard');
+        else if (role === 'COLLEGE_ADMIN' || role === 'CLUB_PRESIDENT' || role === 'EVENT_MANAGER') router.push('/org/dashboard');
+        else router.push('/dashboard');
+      }
     } catch (err: any) {
       const status = err?.response?.status;
       const code = err?.response?.data?.error?.code;

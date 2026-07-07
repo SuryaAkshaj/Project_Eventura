@@ -8,31 +8,91 @@ import CollegeSearch from '@/components/ui/CollegeSearch';
 
 type RoleKey = 'ATTENDEE' | 'COLLEGE_ADMIN' | 'CLUB_PRESIDENT';
 
+// Organisation types — shown as the very first step
+const ORG_TYPES = [
+  {
+    value: 'UNIVERSITY',
+    icon: '🎓',
+    label: 'University / College',
+    description: 'Techfests, culturals, clubs, sports meets',
+    examples: 'IIT Bombay, Woxsen, VIT',
+  },
+  {
+    value: 'COMPANY',
+    icon: '🏢',
+    label: 'Company / Enterprise',
+    description: 'Town halls, product launches, HR events',
+    examples: 'Google, Razorpay, Zepto',
+  },
+  {
+    value: 'COMMUNITY',
+    icon: '👥',
+    label: 'Community / Club',
+    description: 'Hackathons, meetups, tech talks',
+    examples: 'GDG Hyderabad, FOSS United',
+  },
+  {
+    value: 'CREATOR',
+    icon: '🎨',
+    label: 'Creator / Individual',
+    description: 'Workshops, masterclasses, fan events',
+    examples: 'YouTubers, coaches, artists',
+  },
+  {
+    value: 'NGO',
+    icon: '🤝',
+    label: 'NGO / Nonprofit',
+    description: 'Fundraisers, awareness drives, volunteer events',
+    examples: 'CRY, Teach for India',
+  },
+  {
+    value: 'SPORTS',
+    icon: '🏆',
+    label: 'Sports Organisation',
+    description: 'Tournaments, marathons, fitness events',
+    examples: 'Run clubs, sports leagues',
+  },
+  {
+    value: 'ENTERTAINMENT',
+    icon: '🎭',
+    label: 'Entertainment / Media',
+    description: 'Concerts, comedy shows, exhibitions',
+    examples: 'Open mics, art galleries',
+  },
+  {
+    value: 'GOVERNMENT',
+    icon: '🏛️',
+    label: 'Government / Public Sector',
+    description: 'Public hearings, civic events, awareness campaigns',
+    examples: 'Municipal corps, PSUs',
+  },
+];
+
 const roles = [
   {
     id: 'ATTENDEE' as RoleKey,
     icon: 'person',
-    title: 'Student / Attendee',
-    description: 'Discover and register for campus events, earn co-curricular credits and blockchain-verified certificates.',
+    title: 'Attendee',
+    description: 'Discover and register for events, earn co-curricular credits and blockchain-verified certificates.',
     features: ['Browse & register for events', 'Collect verified certificates', 'Track co-curricular progress', 'QR-code entry tickets'],
     cta: 'Join as Attendee',
   },
   {
     id: 'CLUB_PRESIDENT' as RoleKey,
     icon: 'groups',
-    title: 'Club President',
-    description: 'Manage your club, create events, and track attendance for your college club.',
-    features: ['Create club events', 'Live QR scanner & check-in', 'Club member management', 'Event analytics'],
-    cta: 'Join as Club President',
+    title: 'Team Admin',
+    description: 'Manage your team, create events, and track attendance for your organisation.',
+    features: ['Create team events', 'Live QR scanner & check-in', 'Team member management', 'Event analytics'],
+    cta: 'Join as Team Admin',
     badge: 'Requires Approval',
   },
   {
     id: 'COLLEGE_ADMIN' as RoleKey,
     icon: 'business_center',
-    title: 'College Admin',
-    description: 'Administer your college on Eventura — approve clubs, manage events, and oversee the platform.',
-    features: ['Multi-step event creator', 'Club approval & management', 'Revenue & payout dashboard', 'Real-time analytics'],
-    cta: 'Join as College Admin',
+    title: 'Organisation Admin',
+    description: 'Administer your organisation on Eventura — approve teams, manage events, and oversee the platform.',
+    features: ['Multi-step event creator', 'Team approval & management', 'Revenue & payout dashboard', 'Real-time analytics'],
+    cta: 'Join as Organisation Admin',
     badge: 'Requires Approval',
   },
 ];
@@ -41,6 +101,10 @@ const roles = [
 export default function SignupPage() {
   const router = useRouter();
   const [selectedRole, setSelectedRole] = useState<RoleKey | null>(null);
+
+  // Org type selector state
+  const [orgType, setOrgType] = useState<string | null>(null);
+  const [orgTypeSelected, setOrgTypeSelected] = useState(false);
 
   // Form state
   const [firstName, setFirstName] = useState('');
@@ -67,12 +131,12 @@ export default function SignupPage() {
     if (!/[0-9]/.test(password)) errs.password = 'Password must contain a number';
     if (password !== confirmPassword) errs.confirmPassword = 'Passwords do not match';
     if (selectedRole === 'COLLEGE_ADMIN') {
-      if (!collegeName.trim()) errs.collegeName = 'College name is required';
-      if (!collegeDomain.trim()) errs.collegeDomain = 'College domain is required';
+      if (!collegeName.trim()) errs.collegeName = 'Organisation name is required';
+      if (!collegeDomain.trim()) errs.collegeDomain = 'Website domain is required';
     }
     if (selectedRole === 'CLUB_PRESIDENT') {
-      if (!clubName.trim()) errs.clubName = 'Club name is required';
-      if (!collegeId) errs.collegeId = 'Please select your college';
+      if (!clubName.trim()) errs.clubName = 'Team name is required';
+      if (!collegeId) errs.collegeId = 'Please select your organisation';
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -87,6 +151,7 @@ export default function SignupPage() {
     const dto: SignupDto = {
       email, password, firstName, lastName,
       requestedRole: selectedRole,
+      orgCategory: orgType || 'UNIVERSITY',
       ...(selectedRole === 'COLLEGE_ADMIN' && { collegeName, collegeDomain }),
       ...(selectedRole === 'CLUB_PRESIDENT' && { clubName, collegeId }),
     };
@@ -117,9 +182,57 @@ export default function SignupPage() {
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center px-margin-mobile py-xl">
-        {!selectedRole ? (
+        {/* Step 1: Organisation Type Selector */}
+        {!orgTypeSelected ? (
+          <div className="max-w-2xl mx-auto px-4 py-8">
+            <h1 className="font-display-lg text-display-lg text-on-surface text-center mb-2">
+              What best describes you?
+            </h1>
+            <p className="font-body-lg text-body-lg text-on-surface-variant text-center mb-8">
+              Eventura adapts to your organisation type
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {ORG_TYPES.map(type => (
+                <button
+                  key={type.value}
+                  onClick={() => {
+                    setOrgType(type.value);
+                    setOrgTypeSelected(true);
+                    if (type.value !== 'UNIVERSITY') {
+                      setSelectedRole('ATTENDEE');
+                    }
+                  }}
+                  className="p-4 bg-surface border-2 border-outline-variant rounded-xl text-left hover:border-primary hover:shadow-sm transition-all group"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">{type.icon}</span>
+                    <div>
+                      <p className="font-semibold text-on-surface group-hover:text-primary text-sm">
+                        {type.label}
+                      </p>
+                      <p className="text-xs text-on-surface-variant mt-0.5">{type.description}</p>
+                      <p className="text-xs text-outline mt-1">{type.examples}</p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <p className="mt-lg font-body-md text-body-md text-on-surface-variant text-center">
+              Already have an account?{' '}
+              <Link href="/login" className="text-primary font-semibold hover:underline">Sign in</Link>
+            </p>
+          </div>
+        ) : !selectedRole ? (
           <>
+            {/* Step 2: Role Selection */}
             <div className="text-center mb-xl max-w-2xl">
+              <button
+                onClick={() => setOrgTypeSelected(false)}
+                className="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface mb-6 mx-auto transition-colors"
+              >
+                <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+                Change organisation type
+              </button>
               <h1 className="font-display-lg text-display-lg text-on-surface mb-3">Choose your role</h1>
               <p className="font-body-lg text-body-lg text-on-surface-variant">
                 Select how you&apos;ll primarily use Eventura. You can always switch roles later.
@@ -174,19 +287,31 @@ export default function SignupPage() {
             </p>
           </>
         ) : (
+          /* Step 3: Registration Form */
           <div className="w-full max-w-lg">
             <div className="bg-surface border border-outline-variant rounded-xl shadow-sm overflow-hidden">
               <div className="p-lg border-b border-outline-variant bg-surface-container-lowest">
                 <button
-                  onClick={() => setSelectedRole(null)}
+                  onClick={() => {
+                    if (orgType !== 'UNIVERSITY') {
+                      setOrgTypeSelected(false);
+                      setOrgType(null);
+                      setSelectedRole(null);
+                    } else {
+                      setSelectedRole(null);
+                    }
+                  }}
                   className="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface mb-3 transition-colors"
                 >
                   <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-                  Back to role selection
+                  {orgType !== 'UNIVERSITY' ? 'Back to organisation type' : 'Back to role selection'}
                 </button>
                 <h1 className="font-headline-lg text-headline-lg text-on-surface">Create your account</h1>
                 <p className="font-body-md text-body-md text-on-surface-variant mt-1">
-                  Signing up as <span className="text-primary font-semibold">{roles.find(r => r.id === selectedRole)?.title}</span>
+                  {orgType !== 'UNIVERSITY' 
+                    ? 'Get instant access to Eventura'
+                    : <>Signing up as <span className="text-primary font-semibold">{roles.find(r => r.id === selectedRole)?.title}</span></>
+                  }
                 </p>
               </div>
 
@@ -205,8 +330,8 @@ export default function SignupPage() {
                 </div>
 
                 <div className={fieldClass}>
-                  <label htmlFor="email" className={labelClass}>Institutional Email</label>
-                  <input id="email" type="email" placeholder="you@university.edu" value={email} onChange={e => setEmail(e.target.value)} className={inputClass} />
+                  <label htmlFor="email" className={labelClass}>Email</label>
+                  <input id="email" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} className={inputClass} />
                   {errors.email && <p className="font-body-sm text-body-sm text-error">{errors.email}</p>}
                 </div>
 
@@ -225,13 +350,13 @@ export default function SignupPage() {
                 {selectedRole === 'COLLEGE_ADMIN' && (
                   <>
                     <div className={fieldClass}>
-                      <label htmlFor="collegeName" className={labelClass}>College Name</label>
+                      <label htmlFor="collegeName" className={labelClass}>Organisation Name</label>
                       <input id="collegeName" type="text" placeholder="Woxsen University" value={collegeName} onChange={e => setCollegeName(e.target.value)} className={inputClass} />
                       {errors.collegeName && <p className="font-body-sm text-body-sm text-error">{errors.collegeName}</p>}
                     </div>
                     <div className={fieldClass}>
-                      <label htmlFor="collegeDomain" className={labelClass}>College Domain</label>
-                      <input id="collegeDomain" type="text" placeholder="university.edu" value={collegeDomain} onChange={e => setCollegeDomain(e.target.value)} className={inputClass} />
+                      <label htmlFor="collegeDomain" className={labelClass}>Website Domain</label>
+                      <input id="collegeDomain" type="text" placeholder="yourorg.com" value={collegeDomain} onChange={e => setCollegeDomain(e.target.value)} className={inputClass} />
                       {errors.collegeDomain && <p className="font-body-sm text-body-sm text-error">{errors.collegeDomain}</p>}
                     </div>
                   </>
@@ -240,19 +365,19 @@ export default function SignupPage() {
                 {selectedRole === 'CLUB_PRESIDENT' && (
                   <>
                     <div className={fieldClass}>
-                      <label htmlFor="collegeSearch" className={labelClass}>Your College</label>
+                      <label htmlFor="collegeSearch" className={labelClass}>Your Organisation</label>
                       <CollegeSearch
                         value={collegeId}
                         onChange={(id, name) => {
                           setCollegeId(id);
                           setCollegeName(name);
                         }}
-                        placeholder="Search your college (e.g. IIT Bombay, Woxsen...)"
+                        placeholder="Search your organisation (e.g. IIT Bombay, Google, GDG...)"
                       />
                       {errors.collegeId && <p className="font-body-sm text-body-sm text-error">{errors.collegeId}</p>}
                     </div>
                     <div className={fieldClass}>
-                      <label htmlFor="clubName" className={labelClass}>Club Name</label>
+                      <label htmlFor="clubName" className={labelClass}>Team / Club Name</label>
                       <input id="clubName" type="text" placeholder="Robotics Club" value={clubName} onChange={e => setClubName(e.target.value)} className={inputClass} />
                       {errors.clubName && <p className="font-body-sm text-body-sm text-error">{errors.clubName}</p>}
                     </div>

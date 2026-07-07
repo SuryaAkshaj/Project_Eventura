@@ -167,7 +167,7 @@ export default function OrgSettingsPage() {
                     <div>
                       <p className="font-body-md text-on-surface font-semibold mb-1">Organisation Logo</p>
                       <p className="font-label-sm text-label-sm text-on-surface-variant mb-3">PNG or SVG, max 2MB. Displayed on event pages and certificates.</p>
-                      <Button variant="outline" className="border-outline-variant text-on-surface-variant hover:bg-surface-variant h-9 px-4 font-label-sm text-label-sm">
+                      <Button variant="outline" className="border-outline-variant text-on-surface-variant hover:bg-surface-variant h-9 px-4 font-label-sm text-label-sm" onClick={() => alert("Logo upload functionality coming soon!")}>
                         <span className="material-symbols-outlined text-[16px] mr-1.5">upload</span>
                         Upload Logo
                       </Button>
@@ -180,7 +180,7 @@ export default function OrgSettingsPage() {
                     <div className="space-y-2">
                       <Label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">College Name</Label>
                       <Input id="org-name" value={orgName} readOnly className="border-outline-variant bg-surface-container-low text-on-surface-variant cursor-not-allowed" />
-                      <p className="font-label-sm text-label-sm text-on-surface-variant">Contact Super Admin to change</p>
+                      <p className="font-label-sm text-label-sm text-on-surface-variant">Contact Super Admin to change college name</p>
                     </div>
                     <div className="space-y-2">
                       <Label className="font-label-sm text-label-sm text-on-surface uppercase tracking-wide">Domain</Label>
@@ -197,7 +197,7 @@ export default function OrgSettingsPage() {
                         type="url"
                         value={website}
                         onChange={(e) => setWebsite(e.target.value)}
-                        placeholder="https://yourcollege.edu.in"
+                        placeholder="https://yourorg.com"
                         className="border-outline-variant focus-visible:ring-primary"
                       />
                     </div>
@@ -207,7 +207,7 @@ export default function OrgSettingsPage() {
                         id="org-address"
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
-                        placeholder="College address"
+                        placeholder="Organisation address"
                         className="border-outline-variant focus-visible:ring-primary"
                       />
                     </div>
@@ -226,7 +226,7 @@ export default function OrgSettingsPage() {
                               id="club-name"
                               value={clubName}
                               onChange={(e) => setClubName(e.target.value)}
-                              placeholder="Club name"
+                              placeholder="Team name"
                               className="border-outline-variant focus-visible:ring-primary"
                             />
                           </div>
@@ -237,7 +237,7 @@ export default function OrgSettingsPage() {
                             id="club-description"
                             value={clubDescription}
                             onChange={(e) => setClubDescription(e.target.value)}
-                            placeholder="Tell attendees about your club..."
+                            placeholder="Tell attendees about your team..."
                             rows={3}
                             className="w-full border border-outline-variant rounded-lg p-3 font-body-md text-body-md text-on-surface bg-surface resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                           />
@@ -249,7 +249,7 @@ export default function OrgSettingsPage() {
               )}
 
               <div className="p-lg border-t border-outline-variant flex justify-end gap-3 bg-surface-container-lowest">
-                <Button variant="outline" className="border-outline-variant text-on-surface-variant">Reset</Button>
+                <Button variant="outline" className="border-outline-variant text-on-surface-variant" onClick={() => window.location.reload()}>Reset</Button>
                 <Button
                   id="save-profile-btn"
                   onClick={handleSaveProfile}

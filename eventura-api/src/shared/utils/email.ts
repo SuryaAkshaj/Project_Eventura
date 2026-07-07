@@ -3,7 +3,7 @@ import { env } from '@config/env';
 
 const resend = new Resend(env.RESEND_API_KEY);
 
-const FROM_EMAIL = 'Eventura <onboarding@resend.dev>';
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Eventura <onboarding@resend.dev>';
 
 export async function sendOTPEmail(to: string, otp: string, firstName: string): Promise<void> {
   await resend.emails.send({

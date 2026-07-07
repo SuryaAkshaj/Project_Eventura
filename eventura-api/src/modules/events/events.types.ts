@@ -13,6 +13,7 @@ export interface CreateEventDto {
   timezone?: string;
   maxCapacity?: number;
   isMultiDay?: boolean;
+  isFree?: boolean;
   ticketPrice?: number;
   prizePool?: number;                      // Total prize pool in INR
   registrationDeadline?: string;           // ISO string

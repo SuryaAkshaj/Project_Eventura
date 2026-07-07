@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authMiddleware } from '@middleware/auth.middleware';
 import { requireRole } from '@middleware/rbac.middleware';
+import { bulkCertRateLimiter } from '@middleware/rateLimiter.middleware';
 import * as certificatesController from './certificates.controller';
 
 const router = Router();
@@ -20,6 +21,7 @@ router.post(
   '/bulk',
   authMiddleware,
   requireRole('COLLEGE_ADMIN', 'CLUB_PRESIDENT'),
+  bulkCertRateLimiter,
   certificatesController.bulkGenerateCertificates
 );
 

@@ -2,6 +2,12 @@ import { prismaAdmin } from '@config/database';
 import { AppError } from '@shared/errors/AppError';
 import { CreateEventDto, UpdateEventDto, EventQueryDto } from './events.types';
 import { getDeadlineStatus } from '@shared/utils/deadline';
+import {
+  withCache, CacheKeys, CACHE_TTL,
+  invalidateEventListCache, invalidateEventCache
+} from '@shared/utils/cache';
+import { getPagination } from '@shared/utils/pagination';
+import { EVENT_LIST_SELECT } from './event.selects';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Visibility filter — builds a Prisma OR condition for which events are visible
@@ -10,6 +16,8 @@ import { getDeadlineStatus } from '@shared/utils/deadline';
 function visibilityWhere(userContext: { collegeId: string | null; role: string }) {
   const OR: object[] = [
     { visibility: 'PUBLIC' },
+    // Open Mode events — always visible to everyone (no college)
+    { collegeId: null, visibility: 'PUBLIC' },
   ];
 
   if (userContext.collegeId) {
@@ -32,9 +40,7 @@ export async function getEvents(
   query: EventQueryDto,
   userContext: { collegeId: string | null; role: string },
 ) {
-  const page = Number(query.page ?? 1) || 1;
-  const limit = Number(query.limit ?? 12) || 12;
-  const skip = (page - 1) * limit;
+  const { page, limit, skip } = getPagination(query as any);
 
   const where: any = {
     status: 'PUBLISHED',
@@ -110,39 +116,43 @@ export async function getEvents(
   // Exclude sub-events from main listing (sub-events appear on parent fest page)
   where.parentEventId = null;
 
-  const [events, total] = await Promise.all([
-    prismaAdmin.event.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { [query.sortBy ?? 'startDate']: query.sortOrder ?? 'asc' },
-      include: {
-        college: { select: { id: true, name: true, city: true, state: true, logoUrl: true, slug: true } },
-        club: { select: { id: true, name: true, logoUrl: true } },
-        _count: { select: { registrations: true } },
+  const cacheKey = CacheKeys.eventList(
+    userContext.collegeId || 'public',
+    page,
+    JSON.stringify({ category: query.category, format: query.format, isFree: query.isFree })
+  );
+
+  return withCache(cacheKey, CACHE_TTL.EVENT_LIST, async () => {
+    const [events, total] = await Promise.all([
+      prismaAdmin.event.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { [query.sortBy ?? 'startDate']: query.sortOrder ?? 'asc' },
+        select: EVENT_LIST_SELECT,
+      }),
+      prismaAdmin.event.count({ where }),
+    ]);
+
+    // Attach deadline status to each event
+    const eventsWithDeadline = events.map(event => ({
+      ...event,
+      deadlineStatus: getDeadlineStatus({
+        registrationDeadline: event.registrationDeadline,
+        startDate: event.startDate,
+      })
+    }));
+
+    return {
+      events: eventsWithDeadline,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-    }),
-    prismaAdmin.event.count({ where }),
-  ]);
-
-  // Attach deadline status to each event
-  const eventsWithDeadline = events.map(event => ({
-    ...event,
-    deadlineStatus: getDeadlineStatus({
-      registrationDeadline: event.registrationDeadline,
-      startDate: event.startDate,
-    })
-  }));
-
-  return {
-    events: eventsWithDeadline,
-    meta: {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    },
-  };
+    };
+  });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -207,12 +217,56 @@ export async function getEventById(
 
 export async function createEvent(
   dto: CreateEventDto,
-  organizerContext: { userId: string; collegeId: string; clubId?: string | null },
+  organizerContext: { userId: string; collegeId: string | null; clubId?: string | null; accountMode?: string | null },
 ) {
-  // Validate clubId belongs to organizer's college
+  // ── Open Mode: create event without a college ─────────────────────────────
+  if (organizerContext.accountMode === 'OPEN') {
+    const event = await prismaAdmin.event.create({
+      data: {
+        title: dto.title,
+        description: dto.description,
+        eventType: (dto.eventType ?? 'OTHER') as any,
+        startDate: new Date(dto.startDate),
+        endDate: new Date(dto.endDate),
+        venue: dto.venue,
+        onlineLink: dto.onlineLink,
+        isFree: dto.isFree ?? ((dto.ticketPrice ?? 0) === 0),
+        ticketPrice: dto.ticketPrice ?? 0,
+        maxCapacity: dto.maxCapacity,
+        visibility: 'PUBLIC',         // Open Mode events are always public
+        status: 'PUBLISHED',          // Open Mode events publish instantly
+        registrationDeadline: dto.registrationDeadline ? new Date(dto.registrationDeadline) : undefined,
+        prizePool: dto.prizePool ?? undefined,
+        category: dto.category,
+        format: dto.format,
+        bannerUrl: dto.bannerUrl,
+        createdById: organizerContext.userId,
+        publishedAt: new Date(),
+        // collegeId is NULL for Open Mode events
+      },
+      include: {
+        _count: { select: { registrations: true } },
+      },
+    });
+
+    // Audit log
+    await prismaAdmin.auditLog.create({
+      data: {
+        userId: organizerContext.userId,
+        eventId: event.id,
+        action: 'EVENT_CREATED',
+        details: { title: event.title, mode: 'OPEN' },
+      },
+    });
+
+    return event;
+  }
+
+  // ── College Mode: existing logic unchanged ───────────────────────────────
+  const collegeId = organizerContext.collegeId!;
   if (dto.clubId) {
     const club = await prismaAdmin.club.findFirst({
-      where: { id: dto.clubId, collegeId: organizerContext.collegeId },
+      where: { id: dto.clubId, collegeId },
     });
     if (!club) {
       throw AppError.badRequest('Club does not belong to your college');
@@ -224,7 +278,7 @@ export async function createEvent(
       title: dto.title,
       description: dto.description,
       bannerUrl: dto.bannerUrl,
-      collegeId: organizerContext.collegeId,
+      collegeId,
       clubId: dto.clubId ?? organizerContext.clubId ?? null,
       visibility: dto.visibility as any,
       status: 'DRAFT',
@@ -293,6 +347,8 @@ export async function createEvent(
       details: { title: event.title },
     },
   });
+
+  await invalidateEventListCache(collegeId);
 
   return event;
 }
@@ -389,6 +445,9 @@ export async function updateEvent(
     },
   });
 
+  await invalidateEventListCache(organizerContext.collegeId);
+  await invalidateEventCache(eventId);
+
   return updated;
 }
 
@@ -439,7 +498,7 @@ export async function getReadinessScore(
     capacity: !!event.maxCapacity,
     payment: event.isFree
       ? true
-      : !!(event.college.razorpayAccount?.isVerified),
+      : !!(event.college?.razorpayAccount?.isVerified),
     // Type-specific checks:
     sessions: event.eventType === 'FEST'
       ? (event._count.subEvents > 0 || event.sessions.length > 0)
@@ -520,6 +579,9 @@ export async function publishEvent(
     },
   });
 
+  await invalidateEventListCache(organizerContext.collegeId);
+  await invalidateEventCache(eventId);
+
   return updated;
 }
 
@@ -572,6 +634,9 @@ export async function cancelEvent(
     },
   });
 
+  await invalidateEventListCache(organizerContext.collegeId);
+  await invalidateEventCache(eventId);
+
   return updated;
 }
 
@@ -613,9 +678,7 @@ export async function getOrgEvents(
   organizerContext: { collegeId: string },
   query: EventQueryDto,
 ) {
-  const page = Number(query.page ?? 1) || 1;
-  const limit = Number(query.limit ?? 12) || 12;
-  const skip = (page - 1) * limit;
+  const { page, limit, skip } = getPagination(query as any);
 
   const where: any = {
     collegeId: organizerContext.collegeId,

@@ -10,11 +10,24 @@ const envSchema = z.object({
 
   // Redis
   REDIS_URL: z.string().url('REDIS_URL must be a valid Redis connection string'),
-  REDIS_PASSWORD: z.string().min(1, 'REDIS_PASSWORD is required'),
+  REDIS_PASSWORD: z.string().optional().default(''),
 
   // JWT
-  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
-  JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET must be at least 32 characters'),
+  JWT_SECRET: z.string()
+    .min(64, 'JWT_SECRET must be at least 64 characters. Generate with: openssl rand -hex 32')
+    .refine(
+      (val) => !['your-secret', 'secret', 'jwt-secret', 'change-me', 'eventura']
+        .some(weak => val.toLowerCase().includes(weak)),
+      'JWT_SECRET appears to be a placeholder. Use a cryptographically random value.'
+    ),
+
+  JWT_REFRESH_SECRET: z.string()
+    .min(64, 'JWT_REFRESH_SECRET must be at least 64 characters.')
+    .refine(
+      (val) => val !== process.env.JWT_SECRET,
+      'JWT_REFRESH_SECRET must be DIFFERENT from JWT_SECRET'
+    ),
+
   JWT_ACCESS_EXPIRY: z.string().default('15m'),
   JWT_REFRESH_EXPIRY: z.string().default('7d'),
 
@@ -48,7 +61,34 @@ function validateEnv() {
     process.exit(1);
   }
 
-  return result.data;
+  // Production environment safety checks
+  const data = result.data;
+
+  if (data.NODE_ENV === 'production') {
+    const prodErrors: string[] = [];
+
+    if (!data.CLIENT_URL.startsWith('https://')) {
+      prodErrors.push('CLIENT_URL must use HTTPS in production');
+    }
+    if (data.RAZORPAY_KEY_ID?.startsWith('rzp_test_')) {
+      prodErrors.push('RAZORPAY_KEY_ID is a test key — use live key in production');
+    }
+    if (data.DATABASE_URL.includes('localhost')) {
+      prodErrors.push('DATABASE_URL points to localhost in production');
+    }
+    if (data.REDIS_URL?.includes('localhost')) {
+      prodErrors.push('REDIS_URL points to localhost in production');
+    }
+
+    if (prodErrors.length > 0) {
+      console.error('\n❌ Production environment check failed:\n');
+      prodErrors.forEach(e => console.error(`  ✗ ${e}`));
+      console.error('');
+      process.exit(1);
+    }
+  }
+
+  return data;
 }
 
 export const env = validateEnv();

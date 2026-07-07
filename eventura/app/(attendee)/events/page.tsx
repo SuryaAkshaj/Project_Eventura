@@ -153,7 +153,7 @@ export default function EventsPage() {
       {/* Page Header */}
       <div className="mb-xl">
         <h1 className="font-display-lg text-display-lg text-on-surface mb-2">Discover Events</h1>
-        <p className="font-body-lg text-body-lg text-on-surface-variant">Browse and register for upcoming campus events.</p>
+        <p className="font-body-lg text-body-lg text-on-surface-variant">Browse and register for upcoming events.</p>
       </div>
 
       {/* Search + Filter Bar */}
@@ -293,10 +293,10 @@ export default function EventsPage() {
             // Guest user — no public events visible
             <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
               <p className="text-4xl mb-3">🔒</p>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">College events require sign in</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">Organisation events require sign in</h3>
               <p className="text-gray-500 text-sm max-w-sm mx-auto mb-6">
-                Events from IITs, NITs, and private colleges are visible only to verified students.
-                Sign in to discover campus-exclusive events.
+                Events are visible only to verified members.
+                Sign in to discover exclusive events.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <a
@@ -309,7 +309,7 @@ export default function EventsPage() {
                   href="/colleges"
                   className="border border-gray-300 text-gray-700 px-6 py-2.5 rounded-lg font-medium hover:bg-gray-50 transition-colors text-sm"
                 >
-                  Browse colleges
+                  Browse organisations
                 </a>
               </div>
             </div>
@@ -319,14 +319,14 @@ export default function EventsPage() {
               <p className="text-4xl mb-3">🎪</p>
               <h3 className="text-lg font-semibold text-gray-800 mb-2">No events yet</h3>
               <p className="text-gray-500 text-sm max-w-sm mx-auto mb-6">
-                Events from your college and others will appear here. Check back soon!
+                Events from your organisation and others will appear here. Check back soon!
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <a
                   href="/colleges"
                   className="bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition-colors text-sm"
                 >
-                  Explore colleges
+                  Explore organisations
                 </a>
                 <a
                   href="/dashboard"

@@ -1,12 +1,13 @@
 import { Router } from 'express';
 import { authMiddleware } from '@middleware/auth.middleware';
 import { requireRole } from '@middleware/rbac.middleware';
+import { adminRateLimiter } from '@middleware/rateLimiter.middleware';
 import * as adminController from './admin.controller';
 
 const router = Router();
 
 // All admin routes require SUPER_ADMIN role
-router.use(authMiddleware, requireRole('SUPER_ADMIN'));
+router.use(authMiddleware, requireRole('SUPER_ADMIN'), adminRateLimiter);
 
 // Platform stats
 router.get('/stats', adminController.getPlatformStats);

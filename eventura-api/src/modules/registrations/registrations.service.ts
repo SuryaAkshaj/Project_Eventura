@@ -16,11 +16,12 @@ function generateQRToken(userId: string, eventId: string): string {
   return `${Buffer.from(payload).toString('base64url')}.${signature}`;
 }
 
-async function checkEventVisibility(event: any, userCollegeId: string): Promise<boolean> {
+async function checkEventVisibility(event: any, userCollegeId: string | null): Promise<boolean> {
   if (event.visibility === 'PUBLIC') return true;
   if (event.visibility === 'ALL_PLATFORM') return true;
   if (event.visibility === 'ONLY_MY_COLLEGE') return event.collegeId === userCollegeId;
   if (event.visibility === 'SELECTED_COLLEGES') {
+    if (!userCollegeId) return false;
     const shared = await prismaAdmin.sharedEvent.findFirst({
       where: { eventId: event.id, collegeId: userCollegeId }
     });
@@ -33,7 +34,7 @@ async function checkEventVisibility(event: any, userCollegeId: string): Promise<
 // REGISTER FOR EVENT
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function registerForEvent(dto: RegisterEventDto, userId: string, collegeId: string) {
+export async function registerForEvent(dto: RegisterEventDto, userId: string, collegeId: string | null) {
   // 1. Check idempotency — if same key exists, return existing registration
   const existing = await prismaAdmin.registration.findUnique({
     where: { idempotencyKey: dto.idempotencyKey },

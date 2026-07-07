@@ -1,44 +1,52 @@
 import { prismaAdmin } from '@config/database';
 import { AppError } from '@shared/errors/AppError';
 import { CollegeQuery, UserQuery, AuditQuery } from '@shared/types/query.types';
+import { withCache, CacheKeys, CACHE_TTL, invalidatePlatformStats } from '@shared/utils/cache';
+import { getPagination } from '@shared/utils/pagination';
 
 export async function getPlatformStats() {
-  const [
-    totalColleges,
-    pendingColleges,
-    totalClubs,
-    pendingClubs,
-    totalUsers,
-    totalEvents,
-    publishedEvents,
-    totalRegistrations,
-    totalRevenue,
-  ] = await Promise.all([
-    prismaAdmin.college.count({ where: { approvalStatus: 'APPROVED' } }),
-    prismaAdmin.college.count({ where: { approvalStatus: 'PENDING' } }),
-    prismaAdmin.club.count({ where: { approvalStatus: 'APPROVED' } }),
-    prismaAdmin.club.count({ where: { approvalStatus: 'PENDING' } }),
-    prismaAdmin.user.count(),
-    prismaAdmin.event.count(),
-    prismaAdmin.event.count({ where: { status: 'PUBLISHED' } }),
-    prismaAdmin.registration.count({ where: { status: { not: 'CANCELLED' } } }),
-    prismaAdmin.payment.aggregate({
-      where: { status: 'PAID' },
-      _sum: { amount: true }
-    }),
-  ]);
+  return withCache(
+    CacheKeys.platformStats(),
+    CACHE_TTL.PLATFORM_STATS,
+    async () => {
+      const [
+        totalColleges,
+        pendingColleges,
+        totalClubs,
+        pendingClubs,
+        totalUsers,
+        totalEvents,
+        publishedEvents,
+        totalRegistrations,
+        totalRevenue,
+      ] = await Promise.all([
+        prismaAdmin.college.count({ where: { approvalStatus: 'APPROVED' } }),
+        prismaAdmin.college.count({ where: { approvalStatus: 'PENDING' } }),
+        prismaAdmin.club.count({ where: { approvalStatus: 'APPROVED' } }),
+        prismaAdmin.club.count({ where: { approvalStatus: 'PENDING' } }),
+        prismaAdmin.user.count(),
+        prismaAdmin.event.count(),
+        prismaAdmin.event.count({ where: { status: 'PUBLISHED' } }),
+        prismaAdmin.registration.count({ where: { status: { not: 'CANCELLED' } } }),
+        prismaAdmin.payment.aggregate({
+          where: { status: 'PAID' },
+          _sum: { amount: true }
+        }),
+      ]);
 
-  return {
-    colleges: { total: totalColleges, pending: pendingColleges },
-    clubs: { total: totalClubs, pending: pendingClubs },
-    users: { total: totalUsers },
-    events: { total: totalEvents, published: publishedEvents },
-    registrations: { total: totalRegistrations },
-    revenue: {
-      total: Number(totalRevenue._sum.amount || 0),
-      currency: 'INR',
-    },
-  };
+      return {
+        colleges: { total: totalColleges, pending: pendingColleges },
+        clubs: { total: totalClubs, pending: pendingClubs },
+        users: { total: totalUsers },
+        events: { total: totalEvents, published: publishedEvents },
+        registrations: { total: totalRegistrations },
+        revenue: {
+          total: Number(totalRevenue._sum.amount || 0),
+          currency: 'INR',
+        },
+      };
+    }
+  );
 }
 
 export async function getPendingColleges() {
@@ -60,9 +68,7 @@ export async function getPendingColleges() {
 }
 
 export async function getAllColleges(query: CollegeQuery) {
-  const page = Number(query.page) || 1;
-  const limit = Number(query.limit) || 10;
-  const skip = (page - 1) * limit;
+  const { page, limit, skip } = getPagination(query as any);
 
   const where: any = {};
   if (query.search) {
@@ -117,10 +123,16 @@ export async function approveCollege(collegeId: string, adminUserId: string) {
   await prismaAdmin.auditLog.create({
     data: {
       userId: adminUserId,
+      collegeId,
       action: 'COLLEGE_APPROVED',
+      resourceType: 'COLLEGE',
+      resourceId: collegeId,
+      result: 'SUCCESS',
       details: { collegeId, collegeName: college.name }
     }
   });
+
+  await invalidatePlatformStats();
 
   return prismaAdmin.college.findUnique({ where: { id: collegeId } });
 }
@@ -143,10 +155,16 @@ export async function rejectCollege(collegeId: string, adminUserId: string, reas
   await prismaAdmin.auditLog.create({
     data: {
       userId: adminUserId,
+      collegeId,
       action: 'COLLEGE_REJECTED',
+      resourceType: 'COLLEGE',
+      resourceId: collegeId,
+      result: 'SUCCESS',
       details: { collegeId, collegeName: college.name, reason }
     }
   });
+
+  await invalidatePlatformStats();
 
   return { rejected: true };
 }
@@ -160,7 +178,11 @@ export async function suspendCollege(collegeId: string, adminUserId: string) {
   await prismaAdmin.auditLog.create({
     data: {
       userId: adminUserId,
+      collegeId,
       action: 'COLLEGE_SUSPENDED',
+      resourceType: 'COLLEGE',
+      resourceId: collegeId,
+      result: 'SUCCESS',
       details: { collegeId }
     }
   });
@@ -209,7 +231,11 @@ export async function approveClub(clubId: string, adminUserId: string) {
   await prismaAdmin.auditLog.create({
     data: {
       userId: adminUserId,
+      collegeId: club.collegeId,
       action: 'CLUB_APPROVED',
+      resourceType: 'CLUB',
+      resourceId: clubId,
+      result: 'SUCCESS',
       details: { clubId, clubName: club.name }
     }
   });
@@ -235,7 +261,11 @@ export async function rejectClub(clubId: string, adminUserId: string, reason?: s
   await prismaAdmin.auditLog.create({
     data: {
       userId: adminUserId,
+      collegeId: club.collegeId,
       action: 'CLUB_REJECTED',
+      resourceType: 'CLUB',
+      resourceId: clubId,
+      result: 'SUCCESS',
       details: { clubId, clubName: club.name, reason }
     }
   });
@@ -244,9 +274,7 @@ export async function rejectClub(clubId: string, adminUserId: string, reason?: s
 }
 
 export async function getAllUsers(query: UserQuery) {
-  const page = Number(query.page) || 1;
-  const limit = Number(query.limit) || 20;
-  const skip = (page - 1) * limit;
+  const { page, limit, skip } = getPagination(query as any);
 
   const where: any = {};
   if (query.search) {
@@ -317,6 +345,9 @@ export async function updatePlatformSettings(data: any, adminUserId: string) {
     data: {
       userId: adminUserId,
       action: 'PLATFORM_SETTINGS_UPDATED',
+      resourceType: 'PLATFORM_SETTINGS',
+      resourceId: 'singleton',
+      result: 'SUCCESS',
       details: data
     }
   });
@@ -325,9 +356,7 @@ export async function updatePlatformSettings(data: any, adminUserId: string) {
 }
 
 export async function getAuditLog(query: AuditQuery) {
-  const page = Number(query.page) || 1;
-  const limit = Number(query.limit) || 50;
-  const skip = (page - 1) * limit;
+  const { page, limit, skip } = getPagination(query as any);
 
   const where: any = {};
   if (query.action) where.action = { contains: query.action, mode: 'insensitive' };
@@ -352,9 +381,7 @@ export async function getAuditLog(query: AuditQuery) {
 }
 
 export async function getAllEvents(query: { page?: number; limit?: number; search?: string; status?: string }) {
-  const page = Number(query.page) || 1;
-  const limit = Number(query.limit) || 20;
-  const skip = (page - 1) * limit;
+  const { page, limit, skip } = getPagination(query as any);
 
   const where: any = {};
   if (query.search) {

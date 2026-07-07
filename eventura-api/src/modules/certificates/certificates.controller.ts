@@ -44,7 +44,7 @@ export const bulkGenerateCertificates = asyncHandler(async (req, res) => {
   }
   const result = await certificatesService.bulkGenerateCertificates(
     eventId,
-    req.user!.activeContext.collegeId
+    req.user!.activeContext.collegeId!
   );
   return res.json({ success: true, data: result, message: `Generated ${result.succeeded} certificates` });
 });

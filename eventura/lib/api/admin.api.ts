@@ -28,4 +28,7 @@ export const adminApi = {
 
   // Health
   getHealth: () => apiClient.get('/admin/health'),
+
+  // Events
+  getAllEvents: (params?: any) => apiClient.get('/admin/events', { params }),
 };

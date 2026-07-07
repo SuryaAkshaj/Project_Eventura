@@ -1,5 +1,12 @@
 import { create } from 'zustand';
 
+export interface OrgLabels {
+  team: string;
+  members: string;
+  teamAdmin: string;
+  guests: string;
+}
+
 export interface AuthUser {
   id: string;
   email: string;
@@ -13,6 +20,9 @@ export interface ActiveContext {
   collegeId: string | null;
   clubId: string | null;
   permissions?: string[];
+  orgType?: string | null;
+  accountMode?: 'COLLEGE' | 'OPEN' | null;
+  labels?: OrgLabels | null;
 }
 
 interface AuthState {
@@ -21,6 +31,7 @@ interface AuthState {
   activeRole: string | null;
   collegeId: string | null;
   clubId: string | null;
+  activeContext: ActiveContext | null;
   isAuthenticated: boolean;
   isLoading: boolean;
 
@@ -35,6 +46,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   activeRole: null,
   collegeId: null,
   clubId: null,
+  activeContext: null,
   isAuthenticated: false,
   isLoading: false,
 
@@ -45,6 +57,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       activeRole: activeContext?.role ?? null,
       collegeId: activeContext?.collegeId ?? null,
       clubId: activeContext?.clubId ?? null,
+      activeContext: activeContext ?? null,
       isAuthenticated: true,
       isLoading: false,
     }),
@@ -56,6 +69,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       activeRole: null,
       collegeId: null,
       clubId: null,
+      activeContext: null,
       isAuthenticated: false,
       isLoading: false,
     }),

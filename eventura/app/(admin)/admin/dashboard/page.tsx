@@ -18,7 +18,7 @@ export default function SuperAdminDashboardPage() {
   const statCards = [
     {
       icon: "account_balance",
-      label: "Active Institutions",
+      label: "Total Colleges",
       value: isLoading ? "—" : String(stats?.colleges?.total ?? 0),
       color: "text-primary",
       bg: "bg-primary-container/20",
@@ -39,7 +39,7 @@ export default function SuperAdminDashboardPage() {
     },
     {
       icon: "pending",
-      label: "Pending Approvals",
+      label: "Pending Colleges",
       value: isLoading ? "—" : String((stats?.colleges?.pending ?? 0) + (stats?.clubs?.pending ?? 0)),
       color: "text-error",
       bg: "bg-error-container/20",

@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { eventsApi } from '@/lib/api/events.api';
+import { adminApi } from '@/lib/api/admin.api';
 
 const statusColors: Record<string, string> = {
   DRAFT: 'bg-gray-100 text-gray-700',
@@ -16,7 +16,7 @@ export default function AdminEventsPage() {
 
   const fetchEvents = useCallback(() => {
     setIsLoading(true);
-    eventsApi.getEvents({ limit: 50, ...(search ? { search } : {}) })
+    adminApi.getAllEvents({ limit: 50, ...(search ? { search } : {}) })
       .then(res => setEvents(res.data.data))
       .catch(console.error)
       .finally(() => setIsLoading(false));

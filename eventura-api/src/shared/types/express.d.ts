@@ -14,6 +14,16 @@ declare global {
        * Unique request ID injected by requestLogger.middleware.ts
        */
       requestId?: string;
+
+      /**
+       * Client IP address extracted by auth.middleware.ts
+       */
+      ipAddress?: string;
+
+      /**
+       * Browser/device user agent extracted by auth.middleware.ts
+       */
+      userAgent?: string;
     }
   }
 }

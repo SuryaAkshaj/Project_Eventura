@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Eventura — Institutional Event Management",
-  description: "The premier platform for campus events, certificates, and co-curricular management.",
+  title: "Eventura — Event Management for Every Organisation",
+  description: "The premier platform for events, certificates, and co-curricular management across organisations.",
 };
 
 export default function LandingPage() {
@@ -17,7 +17,7 @@ export default function LandingPage() {
             Eventura
           </Link>
           <nav className="hidden md:flex items-center gap-8">
-            <Link href="/colleges" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">Colleges</Link>
+            <Link href="/colleges" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">Organisations</Link>
             <Link href="/events" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">Events</Link>
             <a href="#features" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">Features</a>
             <a href="#about" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">About</a>
@@ -42,15 +42,15 @@ export default function LandingPage() {
         <div className="relative z-10 max-w-4xl mx-auto">
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full font-label-sm text-label-sm mb-6 border border-primary/20">
             <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
-            Built for Institutions
+            Built for Every Organisation
           </div>
           <h1 className="font-display-lg text-display-lg text-on-surface mb-6 leading-tight">
-            Campus Events,
-            <span className="text-primary"> Reimagined</span>
+            Events for Every
+            <span className="text-primary"> Organisation</span>
           </h1>
           <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto mb-8">
-            The institutional-grade platform for discovering, managing, and certifying campus events. 
-            From registration to blockchain-verified credentials — all in one place.
+            The platform for discovering, managing, and certifying events —
+            from college fests to corporate events, community meetups to creator workshops.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
@@ -74,7 +74,7 @@ export default function LandingPage() {
       <section id="features" className="py-xl px-margin-mobile md:px-margin-desktop bg-surface-container-low">
         <div className="max-w-7xl mx-auto">
           <h2 className="font-headline-lg text-headline-lg text-on-surface text-center mb-xl">
-            Everything your institution needs
+            Everything your organisation needs
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter">
             {[
@@ -94,11 +94,60 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Who it's for — 4 cards */}
+      <section className="py-xl px-margin-mobile md:px-margin-desktop bg-surface">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="font-headline-lg text-headline-lg text-on-surface text-center mb-3">
+            Built for every kind of organisation
+          </h2>
+          <p className="font-body-lg text-body-lg text-on-surface-variant text-center mb-10">
+            Whether you run a college club or a corporate event team
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              {
+                icon: '🎓',
+                title: 'Universities & Colleges',
+                desc: 'Techfests, culturals, workshops, club events',
+                color: 'bg-primary-container/30 border-primary-container',
+              },
+              {
+                icon: '🏢',
+                title: 'Companies & Startups',
+                desc: 'Town halls, product launches, offsites',
+                color: 'bg-secondary-container/30 border-secondary-container',
+              },
+              {
+                icon: '👥',
+                title: 'Communities & Clubs',
+                desc: 'Meetups, hackathons, open mics',
+                color: 'bg-tertiary-fixed/30 border-tertiary-fixed',
+              },
+              {
+                icon: '🎨',
+                title: 'Creators & Educators',
+                desc: 'Masterclasses, webinars, fan events',
+                color: 'bg-primary-container/20 border-primary/20',
+              },
+            ].map(item => (
+              <div
+                key={item.title}
+                className={`p-5 rounded-xl border ${item.color}`}
+              >
+                <div className="text-3xl mb-3">{item.icon}</div>
+                <h3 className="font-semibold text-on-surface mb-1 text-sm">{item.title}</h3>
+                <p className="text-xs text-on-surface-variant">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Stats */}
       <section className="py-xl px-margin-mobile md:px-margin-desktop bg-primary text-on-primary">
         <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-gutter text-center">
           {[
-            { value: '100+', label: 'Colleges' },
+            { value: '100+', label: 'Organisations' },
             { value: 'National', label: 'Coverage' },
             { value: 'Real-Time', label: 'QR Check-in' },
             { value: 'Verified', label: 'Certificates' },
@@ -114,9 +163,9 @@ export default function LandingPage() {
       {/* CTA */}
       <section className="py-xl px-margin-mobile md:px-margin-desktop bg-surface-container-low text-center">
         <div className="max-w-3xl mx-auto">
-          <h2 className="font-headline-lg text-headline-lg text-on-surface mb-4">Ready to transform your campus?</h2>
+          <h2 className="font-headline-lg text-headline-lg text-on-surface mb-4">Ready to transform your events?</h2>
           <p className="font-body-lg text-body-lg text-on-surface-variant mb-8">
-            Join hundreds of institutions already using Eventura to streamline their event ecosystem.
+            Join hundreds of organisations already using Eventura to streamline their event ecosystem.
           </p>
           <Link
             href="/signup"
@@ -133,7 +182,7 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="font-headline-lg text-headline-lg text-on-surface mb-4">About Eventura</h2>
           <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">
-            Eventura is built for Indian colleges and organisations that want a modern, secure,
+            Eventura is built for organisations that want a modern, secure,
             and unified way to manage events — from registration to certificates.
           </p>
         </div>
@@ -163,9 +212,10 @@ export default function LandingPage() {
           <div className="flex flex-wrap justify-center gap-6">
             <a href="/terms" className="font-label-sm text-label-sm text-on-surface-variant hover:text-primary">Terms</a>
             <a href="/privacy" className="font-label-sm text-label-sm text-on-surface-variant hover:text-primary">Privacy</a>
+            <a href="/refunds" className="font-label-sm text-label-sm text-on-surface-variant hover:text-primary">Refunds</a>
             <a href="mailto:support@eventura.app" className="font-label-sm text-label-sm text-on-surface-variant hover:text-primary">Support</a>
           </div>
-          <p className="font-label-sm text-label-sm text-on-surface-variant">© 2024 Eventura. Institutional Grade Event Management.</p>
+          <p className="font-label-sm text-label-sm text-on-surface-variant">© 2024 Eventura. Event Management for Every Organisation.</p>
         </div>
       </footer>
     </div>

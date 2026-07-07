@@ -27,8 +27,18 @@ const roleConfig: Record<string, string> = {
   ATTENDEE: "bg-surface-variant text-on-surface-variant border-outline-variant",
 };
 
-const formatRole = (role: string) =>
-  role.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+const formatRole = (role: string) => {
+  const roleLabels: Record<string, string> = {
+    SUPER_ADMIN: 'Super Admin',
+    COLLEGE_ADMIN: 'College Admin',
+    CLUB_PRESIDENT: 'Club President',
+    EVENT_MANAGER: 'Event Manager',
+    ATTENDEE: 'Attendee',
+  };
+  return roleLabels[role] || role.split('_').map(
+    (w: string) => w.charAt(0) + w.slice(1).toLowerCase()
+  ).join(' ');
+};
 
 export default function OrgMembersPage() {
   const [members, setMembers] = useState<any[]>([]);
@@ -91,7 +101,7 @@ export default function OrgMembersPage() {
           <section className="grid grid-cols-3 gap-md">
             {[
               { label: "Total Members", value: members.length.toString(), icon: "group", color: "text-primary" },
-              { label: "Club Presidents", value: members.filter((m) => m.role === "CLUB_PRESIDENT").length.toString(), icon: "stars", color: "text-[#2e7d32]" },
+              { label: "Team Admins", value: members.filter((m) => m.role === "CLUB_PRESIDENT").length.toString(), icon: "stars", color: "text-[#2e7d32]" },
               { label: "Event Managers", value: members.filter((m) => m.role === "EVENT_MANAGER").length.toString(), icon: "event", color: "text-tertiary" },
             ].map((stat) => (
               <div key={stat.label} className="bg-surface border border-outline-variant rounded-xl p-4 shadow-sm">
@@ -139,7 +149,7 @@ export default function OrgMembersPage() {
                   {search ? "No members match your search" : "No members yet"}
                 </p>
                 <p className="font-label-sm text-label-sm text-on-surface-variant mt-1">
-                  Members appear here when they sign up and get approved
+                   Members appear here when they sign up and get approved
                 </p>
               </div>
             ) : (
@@ -153,7 +163,7 @@ export default function OrgMembersPage() {
                       Role
                     </TableHead>
                     <TableHead className="font-label-sm text-on-surface-variant uppercase tracking-wider py-3">
-                      Club
+                      Team
                     </TableHead>
                     <TableHead className="font-label-sm text-on-surface-variant uppercase tracking-wider py-3">
                       Last Active

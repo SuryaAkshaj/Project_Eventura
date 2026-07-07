@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { redis } from '@config/redis';
-import { tooManyRequests } from '@shared/utils/apiResponse';
 import { logger } from '@shared/utils/logger';
 
 interface RateLimiterOptions {
@@ -10,8 +9,13 @@ interface RateLimiterOptions {
   keyExtractor: (req: Request) => string;
 }
 
+const getIp = (req: Request): string =>
+  (req.headers['x-forwarded-for'] as string)
+    ?.split(',')[0]?.trim() || req.ip || 'unknown';
+
 /**
- * Redis sliding window rate limiter factory
+ * TRUE sliding window rate limiter using Redis sorted sets.
+ * Accurate across window boundaries — no edge case exploits.
  */
 function createRateLimiter(options: RateLimiterOptions): RequestHandler {
   const { windowSeconds, maxRequests, keyPrefix, keyExtractor } = options;
@@ -20,39 +24,55 @@ function createRateLimiter(options: RateLimiterOptions): RequestHandler {
     try {
       const identifier = keyExtractor(req);
       const key = `ratelimit:${keyPrefix}:${identifier}`;
+      const now = Date.now();
+      const windowMs = windowSeconds * 1000;
+      const uniqueMember = `${now}-${Math.random()}`;
 
-      const current = await redis.incr(key);
+      // Atomic sliding window via pipeline:
+      // 1. Remove entries outside the window
+      // 2. Add current request
+      // 3. Count requests in window
+      // 4. Set expiry
+      const pipeline = redis.pipeline();
+      pipeline.zremrangebyscore(key, 0, now - windowMs);
+      pipeline.zadd(key, now, uniqueMember);
+      pipeline.zcard(key);
+      pipeline.expire(key, windowSeconds);
+      const results = await pipeline.exec();
 
-      if (current === 1) {
-        // First request — set expiry
-        await redis.expire(key, windowSeconds);
-      }
+      const count = results?.[2]?.[1] as number ?? 0;
+      const remaining = Math.max(0, maxRequests - count);
+      const resetAt = Math.floor((now + windowMs) / 1000);
 
-      // Set rate limit headers
       res.setHeader('X-RateLimit-Limit', maxRequests);
-      res.setHeader('X-RateLimit-Remaining', Math.max(0, maxRequests - current));
-      res.setHeader('X-RateLimit-Reset', Math.floor(Date.now() / 1000) + windowSeconds);
+      res.setHeader('X-RateLimit-Remaining', remaining);
+      res.setHeader('X-RateLimit-Reset', resetAt);
+      res.setHeader('X-RateLimit-Policy', `${maxRequests};w=${windowSeconds};sliding`);
 
-      if (current > maxRequests) {
-        tooManyRequests(res, windowSeconds);
+      if (count > maxRequests) {
+        res.setHeader('Retry-After', windowSeconds);
+        res.status(429).json({
+          success: false,
+          error: {
+            code: 'TOO_MANY_REQUESTS',
+            message: `Rate limit exceeded. Try again in ${windowSeconds} seconds.`,
+          }
+        });
         return;
       }
 
       next();
     } catch (err) {
-      // If Redis is down, fail open (don't block all traffic)
+      // Redis down — fail open (never block all traffic)
       logger.error('Rate limiter error (failing open):', err);
       next();
     }
   };
 }
 
-const getIp = (req: Request): string =>
-  (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || 'unknown';
+// ─── Exported Rate Limiters ───────────────────────────────────────────────
 
-/**
- * General API rate limiter — 100 requests per minute per IP
- */
+/** General API — 100 req/min per IP */
 export const generalRateLimiter = createRateLimiter({
   windowSeconds: 60,
   maxRequests: 100,
@@ -60,9 +80,7 @@ export const generalRateLimiter = createRateLimiter({
   keyExtractor: getIp,
 });
 
-/**
- * Auth endpoint rate limiter — 10 requests per minute per IP (brute-force prevention)
- */
+/** Auth endpoints — 10 req/min per IP */
 export const authRateLimiter = createRateLimiter({
   windowSeconds: 60,
   maxRequests: 10,
@@ -71,9 +89,37 @@ export const authRateLimiter = createRateLimiter({
 });
 
 /**
- * Session endpoint rate limiter — 60 requests per minute per IP.
- * Used for /auth/me and /auth/refresh which are called on every page load.
+ * Login — 5 attempts / 15 min per EMAIL
+ * Scoped per email to prevent distributed brute force
+ * (attacker using 100 IPs to crack one account)
  */
+export const loginRateLimiter = createRateLimiter({
+  windowSeconds: 900,
+  maxRequests: 5,
+  keyPrefix: 'login',
+  keyExtractor: (req) =>
+    req.body?.email?.toLowerCase().trim() || getIp(req),
+});
+
+/** Forgot password — 3 req/hour per email */
+export const forgotPasswordRateLimiter = createRateLimiter({
+  windowSeconds: 3600,
+  maxRequests: 3,
+  keyPrefix: 'forgot',
+  keyExtractor: (req) =>
+    req.body?.email?.toLowerCase().trim() || getIp(req),
+});
+
+/** OTP verification — 5 attempts/hour per email */
+export const otpRateLimiter = createRateLimiter({
+  windowSeconds: 3600,
+  maxRequests: 5,
+  keyPrefix: 'otp',
+  keyExtractor: (req) =>
+    req.body?.email?.toLowerCase().trim() || getIp(req),
+});
+
+/** Session endpoints (me, refresh) — 60/min per IP */
 export const sessionRateLimiter = createRateLimiter({
   windowSeconds: 60,
   maxRequests: 60,
@@ -81,12 +127,34 @@ export const sessionRateLimiter = createRateLimiter({
   keyExtractor: getIp,
 });
 
-/**
- * QR scan rate limiter — 30 scans per minute per Event Manager user ID
- */
+/** QR scan — 60 scans/min per Event Manager userId */
 export const scanRateLimiter = createRateLimiter({
   windowSeconds: 60,
-  maxRequests: 30,
+  maxRequests: 60,
   keyPrefix: 'scan',
-  keyExtractor: (req) => (req as Request & { user?: { sub: string } }).user?.sub ?? getIp(req),
+  keyExtractor: (req) => (req as any).user?.sub ?? getIp(req),
+});
+
+/** Payment order creation — 10/min per userId */
+export const paymentRateLimiter = createRateLimiter({
+  windowSeconds: 60,
+  maxRequests: 10,
+  keyPrefix: 'payment',
+  keyExtractor: (req) => (req as any).user?.sub ?? getIp(req),
+});
+
+/** Bulk certificate generation — 5/hour per userId */
+export const bulkCertRateLimiter = createRateLimiter({
+  windowSeconds: 3600,
+  maxRequests: 5,
+  keyPrefix: 'cert:bulk',
+  keyExtractor: (req) => (req as any).user?.sub ?? getIp(req),
+});
+
+/** Admin endpoints — 500/min per adminId */
+export const adminRateLimiter = createRateLimiter({
+  windowSeconds: 60,
+  maxRequests: 500,
+  keyPrefix: 'admin',
+  keyExtractor: (req) => (req as any).user?.sub ?? getIp(req),
 });
