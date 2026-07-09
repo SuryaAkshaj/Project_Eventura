@@ -204,15 +204,20 @@ router.post(
       });
     }
 
-    const eventManagerRole = await prismaAdmin.role.findUnique({
+    const eventManagerRole = await prismaAdmin.role.upsert({
       where: { name: 'EVENT_MANAGER' },
+      update: {},
+      create: {
+        name: 'EVENT_MANAGER',
+        permissions: {
+          create: [
+            { action: 'events:read' },
+            { action: 'scanner:use' },
+            { action: 'scanner:history' },
+          ],
+        },
+      },
     });
-    if (!eventManagerRole) {
-      return res.status(404).json({
-        success: false,
-        error: { message: 'Event Manager role not found' },
-      });
-    }
 
     const resolvedClubId = clubId ?? null;
     const assignment = await prismaAdmin.roleAssignment.upsert({

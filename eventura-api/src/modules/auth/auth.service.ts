@@ -10,6 +10,7 @@ import { AppError } from '@shared/errors/AppError';
 import { sendOTPEmail, sendPasswordResetEmail } from '@shared/utils/email';
 import type { SignupDto, LoginDto, JwtPayload, TokenPair, OrgLabels } from './auth.types';
 import { PERMISSIONS } from '@shared/constants/permissions';
+import type { RoleName } from '@prisma/client';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Permission map — what permissions each role gets in their JWT
@@ -35,6 +36,59 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     PERMISSIONS.EVENTS.READ,
   ],
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DB permission map — what permissions each role stores in the Permission table
+// Matches seed.ts so production auto-creates identical data
+// ─────────────────────────────────────────────────────────────────────────────
+const ROLE_DB_PERMISSIONS: Record<string, string[]> = {
+  SUPER_ADMIN: [
+    'admin:platform', 'admin:approve',
+    'events:read', 'events:write', 'events:delete', 'events:publish',
+    'scanner:use', 'scanner:history',
+    'finance:read', 'finance:manage',
+    'members:read', 'members:manage',
+  ],
+  COLLEGE_ADMIN: [
+    'events:read', 'events:write', 'events:delete', 'events:publish',
+    'scanner:history',
+    'finance:read', 'finance:manage',
+    'members:read', 'members:manage',
+    'admin:approve',
+  ],
+  CLUB_PRESIDENT: [
+    'events:read', 'events:write', 'events:publish',
+    'scanner:use', 'scanner:history',
+    'finance:read',
+    'members:read', 'members:manage',
+  ],
+  EVENT_MANAGER: [
+    'events:read',
+    'scanner:use', 'scanner:history',
+  ],
+  ATTENDEE: [
+    'events:read',
+  ],
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// getOrCreateRole — upserts a role + its permissions so signup never fails
+// ─────────────────────────────────────────────────────────────────────────────
+async function getOrCreateRole(roleName: RoleName) {
+  const role = await prismaAdmin.role.upsert({
+    where: { name: roleName },
+    update: {},
+    create: {
+      name: roleName,
+      permissions: {
+        create: (ROLE_DB_PERMISSIONS[roleName] || ['events:read']).map(
+          (action) => ({ action })
+        ),
+      },
+    },
+  });
+  return role;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Dynamic org labels — maps orgCategory → contextual UI labels
@@ -182,13 +236,8 @@ export async function signup(dto: SignupDto) {
   // Determine account mode based on org category
   const accountMode = dto.orgCategory === 'UNIVERSITY' || !dto.orgCategory ? 'COLLEGE' : 'OPEN';
 
-  // Get the Role record for the requested role
-  const roleRecord = await prismaAdmin.role.findUnique({
-    where: { name: dto.requestedRole },
-  });
-  if (!roleRecord) {
-    throw new AppError('ROLE_CONFIG_ERROR', 'Role configuration error', 500);
-  }
+  // Get or create the Role record for the requested role (auto-seeds if missing)
+  const roleRecord = await getOrCreateRole(dto.requestedRole as RoleName);
 
   // Create user with accountMode and orgCategory
   const user = await prismaAdmin.user.create({
