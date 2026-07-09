@@ -182,8 +182,9 @@ export default function CreatorDashboardPage() {
                 const isUpcoming = new Date(event.startDate) > new Date();
                 const regCount = event._count?.registrations || 0;
                 return (
-                  <div
+                  <Link
                     key={event.id}
+                    href={`/creator/events/${event.id}`}
                     className="flex items-center gap-5 p-5 bg-white/[0.03] border border-white/[0.06] rounded-2xl hover:bg-white/[0.05] hover:border-white/[0.1] transition-all group cursor-pointer"
                   >
                     {/* Date Badge */}
@@ -230,7 +231,7 @@ export default function CreatorDashboardPage() {
                         {isUpcoming ? 'Upcoming' : 'Past'}
                       </span>
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>

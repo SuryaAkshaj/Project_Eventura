@@ -156,6 +156,18 @@ export async function generateTokenPair(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// generateUsername — creates a URL-safe username from name + partial UUID
+// ─────────────────────────────────────────────────────────────────────────────
+function generateUsername(firstName: string, lastName: string, id: string): string {
+  const base = `${firstName}${lastName}`
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .slice(0, 20);
+  const suffix = id.slice(0, 6); // Use part of UUID for uniqueness
+  return `${base}${suffix}`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // signup
 // ─────────────────────────────────────────────────────────────────────────────
 export async function signup(dto: SignupDto) {
@@ -257,6 +269,13 @@ export async function signup(dto: SignupDto) {
       },
     });
   }
+
+  // Auto-generate username from name
+  const username = generateUsername(dto.firstName, dto.lastName, user.id);
+  await prismaAdmin.user.update({
+    where: { id: user.id },
+    data: { username },
+  });
 
   // Generate and store OTP using cryptographically secure random
   const otp = crypto.randomInt(100000, 999999).toString();

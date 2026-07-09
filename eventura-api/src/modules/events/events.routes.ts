@@ -108,6 +108,33 @@ router.get(
 
 // ─── Public / Attendee Routes ─────────────────────────────────────────────────
 
+// GET /events/public/:id — get any published event (no auth needed)
+// This is used by the public /e/[id] page
+router.get('/public/:id', asyncHandler(async (req, res) => {
+  const event = await prismaAdmin.event.findFirst({
+    where: {
+      id: req.params.id,
+      status: 'PUBLISHED',
+    },
+    include: {
+      college: {
+        select: { name: true, city: true, state: true, logoUrl: true, slug: true }
+      },
+      club: { select: { name: true } },
+      subEvents: {
+        where: { status: 'PUBLISHED' },
+        include: { _count: { select: { registrations: true } } },
+        orderBy: { startDate: 'asc' },
+      },
+      _count: { select: { registrations: true, bookmarks: true } },
+    }
+  });
+
+  if (!event) throw AppError.notFound('Event not found');
+
+  return res.json({ success: true, data: event });
+}));
+
 // GET /events — browse all visible events (auth optional for better visibility)
 router.get('/', optionalAuthMiddleware, eventsController.getEvents);
 

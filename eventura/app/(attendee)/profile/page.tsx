@@ -11,6 +11,13 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Username state
+  const [username, setUsername] = useState<string | null>(null);
+  const [editingUsername, setEditingUsername] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [usernameError, setUsernameError] = useState('');
+  const [usernameSaving, setUsernameSaving] = useState(false);
+
   useEffect(() => {
     apiClient.get('/auth/me')
       .then(res => setProfile(res.data.data))
@@ -20,6 +27,31 @@ export default function ProfilePage() {
       })
       .finally(() => setIsLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fetch username
+  useEffect(() => {
+    apiClient.get('/auth/me/username')
+      .then(res => {
+        setUsername(res.data.data.username);
+        setNewUsername(res.data.data.username || '');
+      })
+      .catch(() => {});
+  }, []);
+
+  // Save username
+  const handleSaveUsername = async () => {
+    setUsernameError('');
+    setUsernameSaving(true);
+    try {
+      await apiClient.patch('/auth/me/username', { username: newUsername });
+      setUsername(newUsername);
+      setEditingUsername(false);
+    } catch (err: any) {
+      setUsernameError(err.response?.data?.error?.message || 'Failed to update username');
+    } finally {
+      setUsernameSaving(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -160,6 +192,92 @@ export default function ProfilePage() {
                 {profile?.id?.slice(0, 8).toUpperCase() || '—'}
               </p>
             </div>
+          </div>
+
+          {/* Public Profile section */}
+          <div className="mt-6 pt-6 border-t border-gray-100">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+              Public Profile
+            </p>
+
+            {username ? (
+              <div className="bg-indigo-50 rounded-xl p-4 border border-indigo-100">
+                <p className="text-xs text-indigo-600 mb-1 font-medium">Your profile URL</p>
+                <div className="flex items-center gap-3">
+                  <p className="text-sm text-indigo-800 font-mono flex-1">
+                    eventura.app/u/{username}
+                  </p>
+                  <a
+                    href={`/u/${username}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700"
+                  >
+                    View
+                  </a>
+                  <button
+                    onClick={() => setEditingUsername(true)}
+                    className="text-xs text-indigo-600 hover:underline"
+                  >
+                    Edit
+                  </button>
+                </div>
+
+                {/* Share on LinkedIn */}
+                <a
+                  href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`https://project-eventura.vercel.app/u/${username}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 text-xs text-blue-600 hover:underline flex items-center gap-1"
+                >
+                  Share on LinkedIn →
+                </a>
+              </div>
+            ) : (
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                <p className="text-sm text-gray-500 mb-2">Set a username to get your public profile</p>
+                <button
+                  onClick={() => setEditingUsername(true)}
+                  className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700"
+                >
+                  Set Username
+                </button>
+              </div>
+            )}
+
+            {/* Username edit form */}
+            {editingUsername && (
+              <div className="mt-3 space-y-2">
+                <input
+                  type="text"
+                  value={newUsername}
+                  onChange={e => setNewUsername(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                  placeholder="your-username"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                {usernameError && (
+                  <p className="text-xs text-red-500">{usernameError}</p>
+                )}
+                <p className="text-xs text-gray-400">
+                  3-30 characters. Lowercase letters, numbers, and hyphens only.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSaveUsername}
+                    disabled={usernameSaving || newUsername.length < 3}
+                    className="text-sm bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    {usernameSaving ? 'Saving...' : 'Save Username'}
+                  </button>
+                  <button
+                    onClick={() => { setEditingUsername(false); setUsernameError(''); }}
+                    className="text-sm text-gray-500 px-4 py-2 rounded-lg hover:bg-gray-100"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Quick links */}
