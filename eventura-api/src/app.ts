@@ -177,12 +177,18 @@ app.use((req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 app.use(errorHandler);
 
+import { runProductionSeed } from '@shared/utils/seed';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // START SERVER
 // ─────────────────────────────────────────────────────────────────────────────
-const server = app.listen(env.PORT, () => {
+const server = app.listen(env.PORT, async () => {
   logger.info(`✅ Server running on port ${env.PORT}`);
   logger.info(`✅ Environment: ${env.NODE_ENV}`);
+  
+  if (env.NODE_ENV === 'production') {
+    await runProductionSeed();
+  }
 });
 
 // ─── Graceful Shutdown ────────────────────────────────────────────────────
