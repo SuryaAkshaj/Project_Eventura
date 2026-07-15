@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import passport from 'passport';
 import {
   loginRateLimiter,
   authRateLimiter,
@@ -10,6 +11,8 @@ import { authMiddleware } from '@middleware/auth.middleware';
 import { asyncHandler } from '@shared/utils/asyncHandler';
 import { prismaAdmin } from '@config/database';
 import { AppError } from '@shared/errors/AppError';
+import { env } from '@config/env';
+import { generateTokenPair } from './auth.service';
 import * as authController from './auth.controller';
 
 const router = Router();
@@ -76,11 +79,100 @@ const router = Router();
 
 // ── Public — no auth required ────────────────────────────────────────────────
 
+// ── Google OAuth ─────────────────────────────────────────────────────────────
+
+// GET /auth/google — redirect to Google login page
+router.get('/google', (req, res, next) => {
+  const orgType = (req.query.orgType as string) || 'UNIVERSITY';
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    session: false,
+    state: orgType,
+  })(req, res, next);
+});
+
+// GET /auth/google/callback — Google redirects here after auth
+router.get('/google/callback',
+  passport.authenticate('google', {
+    session: false,
+    failureRedirect: `${env.CLIENT_URL}/login?error=google_failed`,
+  }),
+  asyncHandler(async (req, res) => {
+    const user = req.user as any;
+    if (!user) {
+      return res.redirect(`${env.CLIENT_URL}/login?error=google_failed`);
+    }
+
+    // Read orgType from state parameter
+    const orgType = (req.query.state as string) || 'UNIVERSITY';
+
+    // Get role assignments
+    const roleAssignments = await prismaAdmin.roleAssignment.findMany({
+      where: { userId: user.id, status: 'APPROVED' },
+      include: { role: true, college: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const ra = roleAssignments[0];
+    const roleName = ra?.role?.name || 'ATTENDEE';
+
+    // Resolve org labels — same pattern as regular login
+    const college = ra?.collegeId
+      ? await prismaAdmin.college.findUnique({
+          where: { id: ra.collegeId },
+          select: { orgCategory: true },
+        })
+      : null;
+
+    const orgCategory = college?.orgCategory ||
+      (user.accountMode === 'OPEN' ? user.orgCategory : 'UNIVERSITY');
+
+    const labelsMap: Record<string, { team: string; members: string; teamAdmin: string; guests: string }> = {
+      UNIVERSITY:    { team: 'Club',       members: 'Students',   teamAdmin: 'Club President',  guests: 'Students' },
+      COMPANY:       { team: 'Department', members: 'Employees',  teamAdmin: 'Department Head', guests: 'Clients' },
+      COMMUNITY:     { team: 'Chapter',    members: 'Members',    teamAdmin: 'Chapter Lead',    guests: 'Guests' },
+      CREATOR:       { team: 'Brand',      members: 'Fans',       teamAdmin: 'Creator',         guests: 'Subscribers' },
+      NGO:           { team: 'Chapter',    members: 'Volunteers', teamAdmin: 'Chapter Head',    guests: 'Donors' },
+      GOVERNMENT:    { team: 'Division',   members: 'Staff',      teamAdmin: 'Division Head',   guests: 'Citizens' },
+      SPORTS:        { team: 'Squad',      members: 'Athletes',   teamAdmin: 'Team Captain',    guests: 'Fans' },
+      ENTERTAINMENT: { team: 'Brand',      members: 'Artists',    teamAdmin: 'Manager',         guests: 'Fans' },
+    };
+
+    const labels = labelsMap[orgCategory || 'UNIVERSITY'] || {
+      team: 'Team', members: 'Members', teamAdmin: 'Team Admin', guests: 'Guests',
+    };
+
+    const activeContext = {
+      role: roleName,
+      collegeId: ra?.collegeId || null,
+      clubId: ra?.clubId || null,
+      orgType: orgCategory || 'UNIVERSITY',
+      accountMode: user.accountMode as 'COLLEGE' | 'OPEN',
+      labels,
+    };
+
+    const tokenPair = await generateTokenPair(user, activeContext);
+
+    // Update last login
+    await prismaAdmin.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+
+    // Redirect to frontend success page with token + context
+    const redirectUrl = new URL(`${env.CLIENT_URL}/auth/google/success`);
+    redirectUrl.searchParams.set('token', tokenPair.accessToken);
+    redirectUrl.searchParams.set('mode', user.accountMode || 'COLLEGE');
+    redirectUrl.searchParams.set('role', roleName);
+    res.redirect(redirectUrl.toString());
+  }),
+);
+
 // GET /auth/profile/:username — public profile (no auth required)
 router.get('/profile/:username', asyncHandler(async (req, res) => {
   const { username } = req.params;
 
-  const user = await prismaAdmin.user.findUnique({
+  const user = await prismaAdmin.user.findFirst({
     where: { username },
     select: {
       id: true,
@@ -203,7 +295,7 @@ router.patch('/me/username', authMiddleware, asyncHandler(async (req, res) => {
   }
 
   // Check availability
-  const existing = await prismaAdmin.user.findUnique({
+  const existing = await prismaAdmin.user.findFirst({
     where: { username }
   });
   if (existing && existing.id !== req.user!.sub) {

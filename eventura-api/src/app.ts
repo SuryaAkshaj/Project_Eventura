@@ -119,6 +119,12 @@ app.use(requestLogger);
 // 6. Rate limiting
 app.use(generalRateLimiter);
 
+// 7. Passport — Google OAuth
+import passport from 'passport';
+import { initGoogleStrategy } from '@modules/auth/google.strategy';
+app.use(passport.initialize());
+initGoogleStrategy();
+
 // ─────────────────────────────────────────────────────────────────────────────
 // SWAGGER API DOCS
 // ─────────────────────────────────────────────────────────────────────────────

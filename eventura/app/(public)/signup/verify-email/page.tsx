@@ -77,14 +77,16 @@ function VerifyEmailContent() {
             </div>
 
             <div className="p-lg flex flex-col gap-lg">
-              {/* Dev mode notice */}
-              <div className="bg-tertiary-fixed/20 border border-tertiary-fixed rounded-lg px-md py-sm flex items-start gap-2">
-                <span className="material-symbols-outlined text-[18px] text-tertiary mt-0.5" style={{ fontVariationSettings: "'FILL' 1" }}>terminal</span>
-                <p className="font-body-sm text-body-sm text-on-surface">
-                  <strong>Dev mode:</strong> Check your <code className="font-mono bg-surface-container px-1 rounded text-xs">eventura-api</code> terminal for your OTP.
-                  It was printed when you signed up.
-                </p>
-              </div>
+              {/* Dev mode notice — only visible in development */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="bg-tertiary-fixed/20 border border-tertiary-fixed rounded-lg px-md py-sm flex items-start gap-2">
+                  <span className="material-symbols-outlined text-[18px] text-tertiary mt-0.5" style={{ fontVariationSettings: "'FILL' 1" }}>terminal</span>
+                  <p className="font-body-sm text-body-sm text-on-surface">
+                    <strong>Dev mode:</strong> Check your <code className="font-mono bg-surface-container px-1 rounded text-xs">eventura-api</code> terminal for your OTP.
+                    It was printed when you signed up.
+                  </p>
+                </div>
+              )}
 
               <form onSubmit={handleSubmit} className="flex flex-col gap-md">
                 <div className="flex flex-col gap-xs">

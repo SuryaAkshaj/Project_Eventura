@@ -37,7 +37,10 @@
     "jsonwebtoken": "^9.0.3",
     "module-alias": "^2.3.4",
     "morgan": "^1.10.0",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
     "pg": "^8.11.3",
+    "prisma": "^5.14.0",
     "puppeteer": "^25.1.0",
     "qrcode": "^1.5.4",
     "razorpay": "^2.9.6",
@@ -47,8 +50,7 @@
     "uuid": "^9.0.1",
     "winston": "^3.11.0",
     "xss": "^1.0.15",
-    "zod": "^3.22.4",
-    "prisma": "^5.14.0"
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -58,6 +60,8 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/morgan": "^1.9.9",
     "@types/node": "^20.11.5",
+    "@types/passport": "^1.0.17",
+    "@types/passport-google-oauth20": "^2.0.17",
     "@types/pg": "^8.11.0",
     "@types/qrcode": "^1.5.6",
     "@types/swagger-jsdoc": "^6.0.4",
@@ -68,8 +72,8 @@
     "eslint": "^8.56.0",
     "nodemon": "^3.0.3",
     "ts-node": "^10.9.2",
-    "tsconfig-paths": "^4.2.0",
     "tsc-alias": "^1.8.10",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.3.3"
   },
   "engines": {

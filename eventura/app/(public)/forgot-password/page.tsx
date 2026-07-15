@@ -27,7 +27,7 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
     try {
       await authApi.forgotPassword(email);
-      setInfo('OTP sent to server console (dev mode). Check your eventura-api terminal.');
+      setInfo('If an account exists with that email, a reset OTP has been sent. Check your inbox and spam folder.');
       setPhase('reset');
     } catch (err: any) {
       setError(err?.response?.data?.error?.message || 'Something went wrong. Please try again.');
