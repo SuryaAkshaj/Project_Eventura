@@ -5,16 +5,30 @@ import { asyncHandler } from '@shared/utils/asyncHandler';
 import { success, error as apiError } from '@shared/utils/apiResponse';
 import { prismaAdmin } from '@config/database';
 import { redis } from '@config/redis';
+import { env } from '@config/env';
 import * as crypto from 'crypto';
 
 const router = Router();
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Static HMAC QR token — deterministic, no nonce, works offline
+// ─────────────────────────────────────────────────────────────────────────────
+function generateStaticQRToken(registrationId: string, userId: string): string {
+  return crypto
+    .createHmac('sha256', env.JWT_SECRET)
+    .update(`${registrationId}:${userId}`)
+    .digest('hex');
+}
+
 // GET /qr/:registrationId — get QR data for a registration (attendee's own ticket)
 router.get('/:registrationId', authMiddleware, asyncHandler(async (req, res) => {
+  const { registrationId } = req.params;
+  const userId = req.user!.sub;
+
   const registration = await prismaAdmin.registration.findFirst({
     where: {
-      id: req.params.registrationId,
-      userId: req.user!.sub,  // Can only get your own QR
+      id: registrationId,
+      userId,  // Can only get your own QR
     },
     include: {
       event: {
@@ -35,73 +49,85 @@ router.get('/:registrationId', authMiddleware, asyncHandler(async (req, res) => 
     return apiError(res, 'PAYMENT_PENDING', 'Complete payment to access QR code', undefined, 402);
   }
 
-  // Generate rotating nonce (refresh every 60 seconds)
-  const nonceKey = `nonce:${registration.id}`;
-  let nonce = await redis.get(nonceKey);
-  if (!nonce) {
-    nonce = crypto.randomBytes(16).toString('hex');
-    await redis.setex(nonceKey, 60, nonce);
-  }
+  // Generate static QR token (no nonce, no Redis, works offline)
+  const qrToken = generateStaticQRToken(registrationId, userId);
+
+  // QR value encodes: registrationId|qrToken
+  // Scanner validates by recomputing the HMAC
+  const qrValue = `${registrationId}|${qrToken}`;
 
   return success(res, {
-    qrToken: registration.qrToken,
-    nonce,
+    qrValue,           // This is what the QR code displays
+    qrToken,
     registrationId: registration.id,
     eventTitle: registration.event.title,
     eventDate: registration.event.startDate,
     venue: registration.event.venue,
     status: registration.status,
+    // No nonce, no expiresAt — QR is permanent
   });
 }));
 
 // POST /qr/validate — validate a QR scan (Event Manager only)
 router.post('/validate', authMiddleware, scanRateLimiter, asyncHandler(async (req, res) => {
-  const { qrToken, eventId } = req.body;
+  const { qrValue, eventId } = req.body;
 
-  if (!qrToken || !eventId) {
-    return apiError(res, 'INVALID_REQUEST', 'qrToken and eventId are required', undefined, 400);
+  if (!qrValue || !eventId) {
+    return apiError(res, 'INVALID_REQUEST', 'qrValue and eventId are required', undefined, 400);
   }
 
-  // 1. Look up QR token in Redis first (fast path)
-  const redisKey = `qr:${qrToken}`;
-  const cachedData = await redis.get(redisKey);
+  // Parse QR value: "registrationId|qrToken"
+  const parts = qrValue.split('|');
+  if (parts.length !== 2) {
+    return success(res, { result: 'INVALID', message: 'Invalid QR code format' });
+  }
 
-  if (!cachedData) {
-    // Try database fallback
-    const registration = await prismaAdmin.registration.findFirst({
-      where: { qrToken },
-      include: { user: { select: { firstName: true, lastName: true, email: true } } }
+  const [registrationId, providedToken] = parts;
+
+  // 1. Fetch registration from DB
+  const registration = await prismaAdmin.registration.findFirst({
+    where: { id: registrationId, eventId },
+    include: {
+      user: { select: { firstName: true, lastName: true, email: true, avatarUrl: true } }
+    }
+  });
+
+  if (!registration) {
+    return success(res, { result: 'INVALID', message: 'QR code not found for this event' });
+  }
+
+  // 2. Verify HMAC signature
+  const expectedToken = crypto
+    .createHmac('sha256', env.JWT_SECRET)
+    .update(`${registrationId}:${registration.userId}`)
+    .digest('hex');
+
+  if (providedToken !== expectedToken) {
+    return success(res, { result: 'INVALID', message: 'QR code signature invalid' });
+  }
+
+  // 3. Check if already checked in
+  if (registration.status === 'CHECKED_IN') {
+    return success(res, {
+      result: 'DUPLICATE',
+      message: 'Already checked in',
+      checkedInAt: registration.checkedInAt,
+      attendee: registration.user,
     });
-
-    if (!registration) {
-      return success(res, { result: 'INVALID', message: 'Invalid QR code' });
-    }
-
-    // Continue with DB data
-    if (registration.eventId !== eventId) {
-      return success(res, { result: 'INVALID', message: 'QR code is for a different event' });
-    }
-
-    if (registration.status === 'CHECKED_IN') {
-      return success(res, {
-        result: 'DUPLICATE',
-        message: 'Already checked in',
-        checkedInAt: registration.checkedInAt,
-        attendee: registration.user,
-      });
-    }
-
-    if (registration.status !== 'REGISTERED') {
-      return success(res, { result: 'INVALID', message: `Registration status: ${registration.status}` });
-    }
-
-    if (registration.paymentStatus === 'PENDING') {
-      return success(res, { result: 'PAYMENT_PENDING', message: 'Payment not completed' });
-    }
   }
 
-  // 2. Atomic Redis SETNX to prevent double-scan race condition
-  const lockKey = `checkin-lock:${qrToken}`;
+  // 4. Check if cancelled
+  if (registration.status !== 'REGISTERED') {
+    return success(res, { result: 'INVALID', message: `Registration status: ${registration.status}` });
+  }
+
+  // 5. Check payment status for paid events
+  if (registration.paymentStatus === 'PENDING') {
+    return success(res, { result: 'PAYMENT_PENDING', message: 'Payment not completed' });
+  }
+
+  // 6. Atomic Redis SETNX to prevent double-scan race condition
+  const lockKey = `checkin-lock:${registrationId}`;
   const lockAcquired = await redis.set(lockKey, '1', 'EX', 30, 'NX');
 
   if (!lockAcquired) {
@@ -109,30 +135,7 @@ router.post('/validate', authMiddleware, scanRateLimiter, asyncHandler(async (re
   }
 
   try {
-    // 3. Get registration from DB for final check
-    const registration = await prismaAdmin.registration.findFirst({
-      where: { qrToken },
-      include: { user: { select: { firstName: true, lastName: true, email: true, avatarUrl: true } } }
-    });
-
-    if (!registration || registration.eventId !== eventId) {
-      return success(res, { result: 'INVALID', message: 'Invalid QR code' });
-    }
-
-    if (registration.status === 'CHECKED_IN') {
-      return success(res, {
-        result: 'DUPLICATE',
-        message: 'Already checked in',
-        checkedInAt: registration.checkedInAt,
-        attendee: registration.user,
-      });
-    }
-
-    if (registration.paymentStatus === 'PENDING') {
-      return success(res, { result: 'PAYMENT_PENDING', message: 'Payment not completed' });
-    }
-
-    // 4. Mark as checked in using Prisma transaction (idempotent upsert pattern)
+    // 7. Mark as checked in using Prisma transaction (idempotent upsert pattern)
     const updated = await prismaAdmin.$transaction(async (tx) => {
       const current = await tx.registration.findUnique({ where: { id: registration.id } });
       if (current?.status === 'CHECKED_IN') return current;
@@ -143,7 +146,7 @@ router.post('/validate', authMiddleware, scanRateLimiter, asyncHandler(async (re
       });
     });
 
-    // 5. Log scan
+    // 8. Log scan
     await prismaAdmin.scanLog.create({
       data: {
         registrationId: registration.id,
@@ -152,9 +155,6 @@ router.post('/validate', authMiddleware, scanRateLimiter, asyncHandler(async (re
         ipAddress: req.ip,
       }
     });
-
-    // 6. Remove from Redis (token used)
-    await redis.del(redisKey);
 
     return success(res, {
       result: 'SUCCESS',

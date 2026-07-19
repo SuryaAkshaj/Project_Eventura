@@ -46,11 +46,11 @@ export default async function PublicEventPage({ params }: Props) {
 
   if (!event) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col items-center justify-center">
         <p className="text-5xl mb-4">🎪</p>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Event Not Found</h1>
-        <p className="text-gray-500 mb-6">This event may have ended or been removed.</p>
-        <Link href="/events" className="text-indigo-600 hover:underline">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Event Not Found</h1>
+        <p className="text-gray-500 dark:text-gray-400 mb-6">This event may have ended or been removed.</p>
+        <Link href="/events" className="text-indigo-600 dark:text-indigo-400 hover:underline">
           Browse all events →
         </Link>
       </div>
@@ -77,24 +77,24 @@ export default async function PublicEventPage({ params }: Props) {
   const price = isFree ? 'Free' : `₹${Number(event.ticketPrice).toLocaleString('en-IN')}`;
 
   const typeConfig: Record<string, { icon: string; color: string }> = {
-    FEST: { icon: '🎪', color: 'bg-purple-100 text-purple-700' },
-    COMPETITION: { icon: '🏆', color: 'bg-amber-100 text-amber-700' },
-    WORKSHOP: { icon: '🛠️', color: 'bg-green-100 text-green-700' },
-    SEMINAR: { icon: '🎤', color: 'bg-blue-100 text-blue-700' },
-    OTHER: { icon: '📅', color: 'bg-gray-100 text-gray-700' },
+    FEST: { icon: '🎪', color: 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300' },
+    COMPETITION: { icon: '🏆', color: 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300' },
+    WORKSHOP: { icon: '🛠️', color: 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' },
+    SEMINAR: { icon: '🎤', color: 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' },
+    OTHER: { icon: '📅', color: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300' },
   };
   const typeInfo = typeConfig[event.eventType] || typeConfig.OTHER;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Minimal navbar */}
-      <nav className="bg-white border-b border-gray-100 px-6 py-3 flex items-center justify-between">
-        <Link href="/" className="font-bold text-indigo-700 text-lg">
+      <nav className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-6 py-3 flex items-center justify-between">
+        <Link href="/" className="font-bold text-indigo-700 dark:text-indigo-300 text-lg">
           Eventura
         </Link>
         <Link
           href="/events"
-          className="text-sm text-gray-500 hover:text-gray-700"
+          className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300"
         >
           Browse Events
         </Link>
@@ -118,9 +118,9 @@ export default async function PublicEventPage({ params }: Props) {
         )}
 
         {/* Event header */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-4">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 mb-4">
           <div className="flex items-start justify-between gap-4 mb-4">
-            <h1 className="text-2xl font-bold text-gray-900 leading-tight">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-tight">
               {event.title}
             </h1>
             <span className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ${typeInfo.color}`}>
@@ -137,51 +137,51 @@ export default async function PublicEventPage({ params }: Props) {
                 className="w-8 h-8 rounded-full object-cover"
               />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 text-sm font-bold">
+              <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-indigo-700 dark:text-indigo-300 text-sm font-bold">
                 {organiserName[0]}
               </div>
             )}
             <div>
-              <p className="text-sm font-medium text-gray-900">{organiserName}</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{organiserName}</p>
               {event.college?.city && (
-                <p className="text-xs text-gray-500">{event.college.city}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{event.college.city}</p>
               )}
             </div>
           </div>
 
           {/* Key details */}
-          <div className="space-y-3 border-t border-gray-100 pt-4">
+          <div className="space-y-3 border-t border-gray-100 dark:border-gray-800 pt-4">
             <div className="flex items-start gap-3">
-              <span className="text-gray-400 mt-0.5">📅</span>
+              <span className="text-gray-400 dark:text-gray-500 mt-0.5">📅</span>
               <div>
-                <p className="text-sm font-medium text-gray-900">{formattedDate}</p>
-                <p className="text-xs text-gray-500">{formattedTime} IST</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{formattedDate}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{formattedTime} IST</p>
               </div>
             </div>
 
             {(event.venue || event.onlineLink) && (
               <div className="flex items-start gap-3">
-                <span className="text-gray-400 mt-0.5">📍</span>
+                <span className="text-gray-400 dark:text-gray-500 mt-0.5">📍</span>
                 <div>
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                     {event.venue || 'Online Event'}
                   </p>
                   {event.onlineLink && (
-                    <p className="text-xs text-gray-500">Virtual event</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Virtual event</p>
                   )}
                 </div>
               </div>
             )}
 
             <div className="flex items-center gap-3">
-              <span className="text-gray-400">🎟️</span>
-              <p className="text-sm font-medium text-gray-900">{price}</p>
+              <span className="text-gray-400 dark:text-gray-500">🎟️</span>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{price}</p>
             </div>
 
             {event.maxCapacity && (
               <div className="flex items-center gap-3">
-                <span className="text-gray-400">👥</span>
-                <p className="text-sm text-gray-600">
+                <span className="text-gray-400 dark:text-gray-500">👥</span>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   {event._count?.registrations || 0} / {event.maxCapacity} registered
                 </p>
               </div>
@@ -189,8 +189,8 @@ export default async function PublicEventPage({ params }: Props) {
 
             {event.prizePool && Number(event.prizePool) > 0 && (
               <div className="flex items-center gap-3">
-                <span className="text-gray-400">🏆</span>
-                <p className="text-sm font-semibold text-amber-600">
+                <span className="text-gray-400 dark:text-gray-500">🏆</span>
+                <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
                   Prize Pool: ₹{Number(event.prizePool).toLocaleString('en-IN')}
                 </p>
               </div>
@@ -205,7 +205,7 @@ export default async function PublicEventPage({ params }: Props) {
             >
               {isFree ? 'Register for Free' : `Register · ${price}`}
             </Link>
-            <p className="text-xs text-gray-400 text-center mt-2">
+            <p className="text-xs text-gray-400 dark:text-gray-500 text-center mt-2">
               Powered by Eventura
             </p>
           </div>
@@ -213,9 +213,9 @@ export default async function PublicEventPage({ params }: Props) {
 
         {/* Description */}
         {event.description && (
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-4">
-            <h2 className="font-semibold text-gray-900 mb-3">About this event</h2>
-            <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 mb-4">
+            <h2 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">About this event</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">
               {event.description}
             </p>
           </div>
@@ -223,8 +223,8 @@ export default async function PublicEventPage({ params }: Props) {
 
         {/* Sub-events (for FEST) */}
         {event.eventType === 'FEST' && event.subEvents?.length > 0 && (
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-4">
-            <h2 className="font-semibold text-gray-900 mb-4">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 mb-4">
+            <h2 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">
               Events & Competitions ({event.subEvents.length})
             </h2>
             <div className="space-y-2">
@@ -232,7 +232,7 @@ export default async function PublicEventPage({ params }: Props) {
                 <Link
                   key={sub.id}
                   href={`/e/${sub.id}`}
-                  className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50 transition-colors"
+                  className="flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-gray-800 hover:border-indigo-200 hover:bg-indigo-50 dark:bg-indigo-950 transition-colors"
                 >
                   <div className="flex items-center gap-2">
                     <span>
@@ -240,8 +240,8 @@ export default async function PublicEventPage({ params }: Props) {
                        sub.eventType === 'WORKSHOP' ? '🛠️' : '📅'}
                     </span>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{sub.title}</p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{sub.title}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         {new Date(sub.startDate).toLocaleDateString('en-IN', {
                           day: 'numeric', month: 'short'
                         })}
@@ -250,7 +250,7 @@ export default async function PublicEventPage({ params }: Props) {
                     </div>
                   </div>
                   {sub.prizePool && Number(sub.prizePool) > 0 && (
-                    <span className="text-xs font-semibold text-amber-600">
+                    <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">
                       ₹{Number(sub.prizePool).toLocaleString('en-IN')}
                     </span>
                   )}
@@ -266,7 +266,7 @@ export default async function PublicEventPage({ params }: Props) {
             <h3 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
               🏨 Accommodation Available
             </h3>
-            <p className="text-sm text-blue-700">
+            <p className="text-sm text-blue-700 dark:text-blue-300">
               {event.accommodationInfo || 'Accommodation details shared after registration.'}
             </p>
           </div>
@@ -274,17 +274,17 @@ export default async function PublicEventPage({ params }: Props) {
 
         {/* Competition rules */}
         {event.eventType === 'COMPETITION' && event.competitionRules && (
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-4">
-            <h2 className="font-semibold text-gray-900 mb-3">Rules & Regulations</h2>
-            <p className="text-sm text-gray-600 whitespace-pre-line leading-relaxed">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 mb-4">
+            <h2 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Rules & Regulations</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-line leading-relaxed">
               {event.competitionRules}
             </p>
           </div>
         )}
 
         {/* Share event */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 text-center">
-          <p className="text-sm text-gray-500 mb-3">Share this event</p>
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 text-center">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Share this event</p>
           <ShareButtons eventId={event.id} eventTitle={event.title} />
         </div>
 

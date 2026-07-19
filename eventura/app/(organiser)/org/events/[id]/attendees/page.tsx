@@ -7,13 +7,13 @@ import { registrationsApi } from '@/lib/api/registrations.api';
 const statusConfig: Record<string, { label: string; classes: string }> = {
   REGISTERED: { label: 'Registered', classes: 'bg-primary/10 text-primary border-primary/20' },
   CHECKED_IN: { label: 'Checked In', classes: 'bg-sky-50 text-sky-700 border-sky-200' },
-  WAITLISTED: { label: 'Waitlisted', classes: 'bg-amber-50 text-amber-700 border-amber-200' },
+  WAITLISTED: { label: 'Waitlisted', classes: 'bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border-amber-200' },
 };
 
 const paymentConfig: Record<string, { label: string; classes: string }> = {
   FREE: { label: 'Free', classes: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   PAID: { label: 'Paid', classes: 'bg-primary/10 text-primary border-primary/20' },
-  PENDING: { label: 'Pending', classes: 'bg-amber-50 text-amber-700 border-amber-200' },
+  PENDING: { label: 'Pending', classes: 'bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border-amber-200' },
 };
 
 export default function AttendeesPage() {
@@ -94,7 +94,7 @@ export default function AttendeesPage() {
               <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mt-1">Checked In</p>
             </div>
             <div className="bg-surface border border-outline-variant rounded-xl p-4 text-center shadow-sm">
-              <p className="font-headline-lg text-headline-lg text-amber-600">{waitlistCount}</p>
+              <p className="font-headline-lg text-headline-lg text-amber-600 dark:text-amber-400">{waitlistCount}</p>
               <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mt-1">Waitlisted</p>
             </div>
           </div>

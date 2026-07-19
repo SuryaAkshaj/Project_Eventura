@@ -30,11 +30,11 @@ const EVENT_TYPE_FILTERS = [
 ];
 
 const typeConfig: Record<string, { icon: string; label: string; color: string }> = {
-  FEST: { icon: '🎥', label: 'Fest', color: 'bg-purple-100 text-purple-700' },
-  COMPETITION: { icon: '🏆', label: 'Competition', color: 'bg-amber-100 text-amber-700' },
-  WORKSHOP: { icon: '🛠️', label: 'Workshop', color: 'bg-green-100 text-green-700' },
-  SEMINAR: { icon: '🎤', label: 'Seminar', color: 'bg-blue-100 text-blue-700' },
-  OTHER: { icon: '📅', label: 'Event', color: 'bg-gray-100 text-gray-600' },
+  FEST: { icon: '🎥', label: 'Fest', color: 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300' },
+  COMPETITION: { icon: '🏆', label: 'Competition', color: 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300' },
+  WORKSHOP: { icon: '🛠️', label: 'Workshop', color: 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' },
+  SEMINAR: { icon: '🎤', label: 'Seminar', color: 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' },
+  OTHER: { icon: '📅', label: 'Event', color: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400' },
 };
 
 const INDIAN_STATES = [
@@ -215,7 +215,7 @@ export default function EventsPage() {
             className={`font-label-sm text-label-sm px-4 py-2 rounded-full border transition-colors ${
               activeCategory === cat.value
                 ? "bg-primary text-white border-primary"
-                : "bg-white text-on-surface border-outline-variant hover:bg-surface-variant"
+                : "bg-white dark:bg-gray-900 text-on-surface border-outline-variant hover:bg-surface-variant"
             }`}
           >
             {cat.label}
@@ -230,7 +230,7 @@ export default function EventsPage() {
             className={`font-label-sm text-label-sm px-4 py-2 rounded-full border transition-colors ${
               eventTypeFilter === type.value
                 ? 'bg-indigo-600 text-white border-indigo-600'
-                : 'bg-white text-on-surface border-outline-variant hover:bg-surface-variant'
+                : 'bg-white dark:bg-gray-900 text-on-surface border-outline-variant hover:bg-surface-variant'
             }`}
           >
             {type.label}
@@ -243,7 +243,7 @@ export default function EventsPage() {
           className={`font-label-sm text-label-sm px-4 py-2 rounded-full border transition-colors ${
             closingSoon
               ? 'bg-red-600 text-white border-red-600'
-              : 'bg-white text-on-surface border-outline-variant hover:bg-surface-variant'
+              : 'bg-white dark:bg-gray-900 text-on-surface border-outline-variant hover:bg-surface-variant'
           }`}
         >
           ⏰ Closing Soon
@@ -278,23 +278,23 @@ export default function EventsPage() {
         <div className="col-span-full">
           {search || activeCategory || activeFormat !== 'All Formats' || isFree !== undefined || selectedState || closingSoon || eventTypeFilter ? (
             // Filter applied — no results
-            <div className="text-center py-16 bg-white rounded-xl border border-dashed border-gray-200">
+            <div className="text-center py-16 bg-white dark:bg-gray-900 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
               <p className="text-4xl mb-3">🔍</p>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">No events match your filters</h3>
-              <p className="text-gray-500 text-sm mb-6">Try adjusting your search or clearing some filters</p>
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">No events match your filters</h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">Try adjusting your search or clearing some filters</p>
               <button
                 onClick={clearFilters}
-                className="text-indigo-600 font-medium text-sm hover:underline"
+                className="text-indigo-600 dark:text-indigo-400 font-medium text-sm hover:underline"
               >
                 Clear all filters →
               </button>
             </div>
           ) : !isAuthenticated ? (
             // Guest user — no public events visible
-            <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
+            <div className="text-center py-16 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
               <p className="text-4xl mb-3">🔒</p>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">Organisation events require sign in</h3>
-              <p className="text-gray-500 text-sm max-w-sm mx-auto mb-6">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">Organisation events require sign in</h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm max-w-sm mx-auto mb-6">
                 Events are visible only to verified members.
                 Sign in to discover exclusive events.
               </p>
@@ -307,7 +307,7 @@ export default function EventsPage() {
                 </a>
                 <a
                   href="/colleges"
-                  className="border border-gray-300 text-gray-700 px-6 py-2.5 rounded-lg font-medium hover:bg-gray-50 transition-colors text-sm"
+                  className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-6 py-2.5 rounded-lg font-medium hover:bg-gray-50 dark:bg-gray-950 transition-colors text-sm"
                 >
                   Browse organisations
                 </a>
@@ -315,10 +315,10 @@ export default function EventsPage() {
             </div>
           ) : (
             // Logged in — genuinely no events yet
-            <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
+            <div className="text-center py-16 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
               <p className="text-4xl mb-3">🎪</p>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">No events yet</h3>
-              <p className="text-gray-500 text-sm max-w-sm mx-auto mb-6">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">No events yet</h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm max-w-sm mx-auto mb-6">
                 Events from your organisation and others will appear here. Check back soon!
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -330,7 +330,7 @@ export default function EventsPage() {
                 </a>
                 <a
                   href="/dashboard"
-                  className="border border-gray-300 text-gray-700 px-6 py-2.5 rounded-lg font-medium hover:bg-gray-50 transition-colors text-sm"
+                  className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-6 py-2.5 rounded-lg font-medium hover:bg-gray-50 dark:bg-gray-950 transition-colors text-sm"
                 >
                   View saved events
                 </a>
@@ -370,7 +370,7 @@ export default function EventsPage() {
                       </div>
                     )}
                     <div className="absolute top-3 left-3 flex gap-2 flex-wrap">
-                      <span className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded font-label-sm text-label-sm text-primary border border-outline-variant/20 shadow-sm">
+                      <span className="bg-white dark:bg-gray-900/90 backdrop-blur-sm px-2 py-1 rounded font-label-sm text-label-sm text-primary border border-outline-variant/20 shadow-sm">
                         {event.category}
                       </span>
                       <span className="bg-primary/90 backdrop-blur-sm px-2 py-1 rounded font-label-sm text-label-sm text-on-primary shadow-sm">
@@ -391,7 +391,7 @@ export default function EventsPage() {
                     <div className="absolute top-3 right-3">
                       <button
                         onClick={(e) => handleBookmark(e, event.id)}
-                        className={`w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center transition-colors shadow-sm ${isBookmarked ? 'text-primary' : 'text-on-surface-variant hover:text-primary'}`}
+                        className={`w-8 h-8 bg-white dark:bg-gray-900/90 backdrop-blur-sm rounded-full flex items-center justify-center transition-colors shadow-sm ${isBookmarked ? 'text-primary' : 'text-on-surface-variant hover:text-primary'}`}
                         title={isBookmarked ? 'Remove bookmark' : 'Bookmark event'}
                       >
                         <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: isBookmarked ? "'FILL' 1" : "'FILL' 0" }}>bookmark</span>
@@ -431,7 +431,7 @@ export default function EventsPage() {
                         {price}
                       </span>
                       {event.prizePool && Number(event.prizePool) > 0 && (
-                        <span className="font-label-sm text-label-sm text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                        <span className="font-label-sm text-label-sm text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950 border border-amber-200 px-2 py-0.5 rounded-full">
                           🏆 ₹{Number(event.prizePool).toLocaleString('en-IN')}
                         </span>
                       )}

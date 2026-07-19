@@ -110,8 +110,8 @@ export default function LiveManagementHubPage() {
               </div>
               {isLoading ? (
                 <div className="animate-pulse">
-                  <div className="h-8 bg-gray-200 rounded w-64 mb-2" />
-                  <div className="h-4 bg-gray-200 rounded w-48" />
+                  <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-64 mb-2" />
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-48" />
                 </div>
               ) : (
                 <>
@@ -154,9 +154,9 @@ export default function LiveManagementHubPage() {
             <section className="grid grid-cols-2 lg:grid-cols-4 gap-md">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="bg-surface border border-outline-variant rounded-xl p-4 shadow-sm animate-pulse">
-                  <div className="w-10 h-10 rounded-xl bg-gray-200 mb-3" />
-                  <div className="h-3 bg-gray-200 rounded w-20 mb-2" />
-                  <div className="h-8 bg-gray-200 rounded w-16" />
+                  <div className="w-10 h-10 rounded-xl bg-gray-200 dark:bg-gray-700 mb-3" />
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-20 mb-2" />
+                  <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-16" />
                 </div>
               ))}
             </section>

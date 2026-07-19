@@ -282,7 +282,8 @@ export async function signup(dto: SignupDto) {
         name: dto.collegeName!,
         domain: dto.collegeDomain!,
         orgCategory: dto.orgCategory || 'UNIVERSITY',
-        approvalStatus: 'PENDING',
+        approvalStatus: 'APPROVED',
+        approvedAt: new Date(),
       },
     });
 
@@ -291,20 +292,21 @@ export async function signup(dto: SignupDto) {
         userId: user.id,
         roleId: roleRecord.id,
         collegeId: college.id,
-        status: 'PENDING',
+        status: 'APPROVED',
       },
     });
   } else if (dto.requestedRole === 'CLUB_PRESIDENT') {
     const college = await prismaAdmin.college.findUnique({ where: { id: dto.collegeId } });
-    if (!college || college.approvalStatus !== 'APPROVED') {
-      throw AppError.badRequest('College not found or not yet approved');
+    if (!college) {
+      throw AppError.badRequest('College not found');
     }
 
     const club = await prismaAdmin.club.create({
       data: {
         name: dto.clubName!,
         collegeId: college.id,
-        approvalStatus: 'PENDING',
+        approvalStatus: 'APPROVED',
+        approvedAt: new Date(),
       },
     });
 
@@ -314,7 +316,7 @@ export async function signup(dto: SignupDto) {
         roleId: roleRecord.id,
         collegeId: college.id,
         clubId: club.id,
-        status: 'PENDING',
+        status: 'APPROVED',
       },
     });
   }

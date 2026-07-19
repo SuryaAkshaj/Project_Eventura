@@ -4,10 +4,10 @@ import Link from 'next/link';
 import { eventsApi } from '@/lib/api/events.api';
 
 const statusColors: Record<string, string> = {
-  DRAFT: 'bg-gray-100 text-gray-700',
-  PUBLISHED: 'bg-green-100 text-green-700',
-  CANCELLED: 'bg-red-100 text-red-700',
-  COMPLETED: 'bg-blue-100 text-blue-700',
+  DRAFT: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300',
+  PUBLISHED: 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300',
+  CANCELLED: 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300',
+  COMPLETED: 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300',
 };
 
 export default function OrgEventsPage() {
@@ -44,7 +44,7 @@ export default function OrgEventsPage() {
         </section>
 
         {/* Events List */}
-        <section className="bg-white border border-outline-variant rounded-xl shadow-sm overflow-hidden">
+        <section className="bg-white dark:bg-gray-900 border border-outline-variant rounded-xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -61,12 +61,12 @@ export default function OrgEventsPage() {
                 {isLoading && (
                   Array.from({ length: 4 }).map((_, i) => (
                     <tr key={i} className="animate-pulse">
-                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 rounded w-48" /></td>
-                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 rounded w-24" /></td>
-                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 rounded w-20" /></td>
-                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 rounded w-16" /></td>
-                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 rounded w-20" /></td>
-                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 rounded w-28" /></td>
+                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-48" /></td>
+                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24" /></td>
+                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20" /></td>
+                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16" /></td>
+                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20" /></td>
+                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-28" /></td>
                     </tr>
                   ))
                 )}
@@ -111,7 +111,7 @@ export default function OrgEventsPage() {
                       </td>
                       <td className="py-4 px-6 text-on-surface-variant">{formattedDate}</td>
                       <td className="py-4 px-6">
-                        <span className={`font-label-sm text-label-sm px-2 py-1 rounded-sm uppercase ${statusColors[event.status] ?? 'bg-gray-100 text-gray-700'}`}>
+                        <span className={`font-label-sm text-label-sm px-2 py-1 rounded-sm uppercase ${statusColors[event.status] ?? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}>
                           {event.status}
                         </span>
                       </td>

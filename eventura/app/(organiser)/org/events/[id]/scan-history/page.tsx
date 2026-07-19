@@ -35,7 +35,7 @@ export default function ScanHistoryPage() {
   const statusColors: Record<string, string> = {
     CHECKED_IN: "bg-[#f0f9f1] text-[#2e7d32] border-[#c6e5ca]",
     REGISTERED: "bg-primary/10 text-primary border-primary/20",
-    WAITLISTED: "bg-amber-50 text-amber-700 border-amber-200",
+    WAITLISTED: "bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border-amber-200",
     CANCELLED: "bg-error-container/20 text-error border-error-container",
   };
 
@@ -76,7 +76,7 @@ export default function ScanHistoryPage() {
             {[
               { label: "Checked In", value: isLoading ? "—" : checkedIn.length, color: "text-[#2e7d32]", bg: "bg-[#f0f9f1]" },
               { label: "Registered", value: isLoading ? "—" : registered.length, color: "text-primary", bg: "bg-primary/10" },
-              { label: "Waitlisted", value: isLoading ? "—" : waitlisted.length, color: "text-amber-600", bg: "bg-amber-50" },
+              { label: "Waitlisted", value: isLoading ? "—" : waitlisted.length, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-950" },
             ].map((stat) => (
               <div
                 key={stat.label}

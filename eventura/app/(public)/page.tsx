@@ -178,7 +178,7 @@ export default function LandingPage() {
       </section>
 
       {/* About Section */}
-      <section id="about" className="py-xl px-margin-mobile md:px-margin-desktop bg-white">
+      <section id="about" className="py-xl px-margin-mobile md:px-margin-desktop bg-white dark:bg-gray-900">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="font-headline-lg text-headline-lg text-on-surface mb-4">About Eventura</h2>
           <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">

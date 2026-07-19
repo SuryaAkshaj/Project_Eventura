@@ -38,15 +38,15 @@ export default function CookieConsent() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6">
-      <div className="max-w-4xl mx-auto bg-white border border-gray-200 rounded-xl shadow-lg p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+      <div className="max-w-4xl mx-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-gray-700 font-medium mb-1">
+          <p className="text-sm text-gray-700 dark:text-gray-300 font-medium mb-1">
             🍪 We use cookies
           </p>
-          <p className="text-xs text-gray-500 leading-relaxed">
+          <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
             Eventura uses essential cookies for authentication and security.
             We don&apos;t serve ads or track you across other sites.{' '}
-            <a href="/privacy" className="text-indigo-600 hover:underline">
+            <a href="/privacy" className="text-indigo-600 dark:text-indigo-400 hover:underline">
               Learn more
             </a>
           </p>
@@ -54,7 +54,7 @@ export default function CookieConsent() {
         <div className="flex items-center gap-2 flex-shrink-0">
           <button
             onClick={() => handleConsent('rejected')}
-            className="text-xs text-gray-500 hover:text-gray-700 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+            className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             Essential only
           </button>

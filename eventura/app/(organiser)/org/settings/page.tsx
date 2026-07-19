@@ -140,7 +140,7 @@ export default function OrgSettingsPage() {
 
               {/* Success / Error banners */}
               {profileSaved && (
-                <div className="mx-lg mt-lg p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
+                <div className="mx-lg mt-lg p-3 bg-green-50 dark:bg-green-950 border border-green-200 rounded-lg text-green-700 dark:text-green-300 text-sm flex items-center gap-2">
                   <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
                   Settings saved successfully
                 </div>

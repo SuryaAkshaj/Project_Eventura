@@ -18,14 +18,14 @@ import { ShimmerTicketCard } from "@/components/ui/Shimmer";
 const registrationStatusConfig: Record<string, { label: string; classes: string }> = {
   REGISTERED: { label: "Registered", classes: "bg-primary/10 text-primary border-primary/20" },
   CHECKED_IN: { label: "Checked In", classes: "bg-sky-50 text-sky-700 border-sky-200" },
-  WAITLISTED: { label: "Waitlisted", classes: "bg-amber-50 text-amber-700 border-amber-200" },
+  WAITLISTED: { label: "Waitlisted", classes: "bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border-amber-200" },
   CANCELLED: { label: "Cancelled", classes: "bg-surface-variant text-on-surface-variant border-outline-variant" },
 };
 
 const paymentStatusConfig: Record<string, { label: string; classes: string }> = {
   FREE: { label: "Free", classes: "bg-emerald-50 text-emerald-700 border-emerald-200" },
   PAID: { label: "Paid", classes: "bg-primary/10 text-primary border-primary/20" },
-  PENDING: { label: "Payment Pending", classes: "bg-amber-50 text-amber-700 border-amber-200" },
+  PENDING: { label: "Payment Pending", classes: "bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border-amber-200" },
   REFUNDED: { label: "Refunded", classes: "bg-surface-variant text-on-surface-variant border-outline-variant" },
   FAILED: { label: "Failed", classes: "bg-error-container/20 text-error border-error-container" },
 };
@@ -81,7 +81,7 @@ export default function MyTicketsPage() {
   if (isLoading) {
     return (
       <div className="flex-grow w-full max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop py-xl">
-        <div className="h-10 bg-gray-200 rounded w-48 mb-xl animate-pulse" />
+        <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-xl animate-pulse" />
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-gutter">
           {[1, 2, 3, 4].map(i => (
             <ShimmerTicketCard key={i} />
@@ -293,7 +293,7 @@ export default function MyTicketsPage() {
             )}
 
             {qrModalData?.qrData && !qrModalData.isLoading && (
-              <div className="bg-white p-4 rounded-xl border border-outline-variant">
+              <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-outline-variant">
                 <QRCodeSVG
                   value={`${qrModalData.qrData.qrToken}|${qrModalData.qrData.nonce}|${qrModalData.qrData.registrationId}`}
                   size={200}

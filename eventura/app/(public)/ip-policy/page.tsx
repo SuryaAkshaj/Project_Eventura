@@ -7,23 +7,23 @@ export const metadata: Metadata = {
 
 export default function IPPolicyPage() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="max-w-3xl mx-auto px-6 py-16">
         <div className="mb-10">
-          <Link href="/" className="text-indigo-600 text-sm hover:underline">← Back to Eventura</Link>
-          <h1 className="text-3xl font-bold text-gray-900 mt-4 mb-2">Intellectual Property Policy</h1>
-          <p className="text-gray-500 text-sm">Last updated: June 2026</p>
+          <Link href="/" className="text-indigo-600 dark:text-indigo-400 text-sm hover:underline">← Back to Eventura</Link>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-4 mb-2">Intellectual Property Policy</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">Last updated: June 2026</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-8 space-y-8 text-gray-600 leading-relaxed">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-8 space-y-8 text-gray-600 dark:text-gray-400 leading-relaxed">
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">Eventura Trademarks</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Eventura Trademarks</h2>
             <p>&quot;Eventura&quot; and the Eventura logo are trademarks of Eventura. You may not use these marks without our prior written permission.</p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">Organiser Content</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Organiser Content</h2>
             <p className="mb-3">Organisers retain ownership of all content they upload to Eventura, including:</p>
             <ul className="list-disc pl-5 space-y-2 text-sm">
               <li>Event descriptions, posters, and images</li>
@@ -34,9 +34,9 @@ export default function IPPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">DMCA Takedown Process</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">DMCA Takedown Process</h2>
             <p className="mb-3">If you believe content on Eventura infringes your intellectual property rights, send a takedown notice to{' '}
-              <a href="mailto:dmca@eventura.app" className="text-indigo-600 hover:underline">dmca@eventura.app</a>{' '}
+              <a href="mailto:dmca@eventura.app" className="text-indigo-600 dark:text-indigo-400 hover:underline">dmca@eventura.app</a>{' '}
               including:
             </p>
             <ul className="list-disc pl-5 space-y-2 text-sm">
@@ -50,7 +50,7 @@ export default function IPPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">Platform Liability</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Platform Liability</h2>
             <p>Eventura is a platform that hosts user-generated content. We are not responsible for intellectual property infringement by third parties. We will respond promptly to valid infringement notices and remove infringing content.</p>
           </section>
 

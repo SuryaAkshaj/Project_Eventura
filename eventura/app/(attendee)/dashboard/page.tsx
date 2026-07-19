@@ -64,11 +64,11 @@ export default function AttendeeDashboardPage() {
             <p className="font-body-lg text-body-lg text-on-surface-variant">Here&apos;s what&apos;s happening on campus this week.</p>
           </div>
           <div className="flex gap-4">
-            <div className="bg-white border border-outline-variant rounded-xl p-4 min-w-[160px] shadow-sm">
+            <div className="bg-white dark:bg-gray-900 border border-outline-variant rounded-xl p-4 min-w-[160px] shadow-sm">
               <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Upcoming Events</p>
               <p className="font-headline-lg text-headline-lg text-primary">{upcomingEvents.length}</p>
             </div>
-            <div className="bg-white border border-outline-variant rounded-xl p-4 min-w-[160px] shadow-sm">
+            <div className="bg-white dark:bg-gray-900 border border-outline-variant rounded-xl p-4 min-w-[160px] shadow-sm">
               <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Active Tickets</p>
               <p className="font-headline-lg text-headline-lg text-tertiary">{activeTickets.length}</p>
             </div>
@@ -87,7 +87,7 @@ export default function AttendeeDashboardPage() {
                 </h2>
               </div>
               {activeTickets.length === 0 ? (
-                <div className="text-center py-8 text-on-surface-variant bg-white border border-outline-variant rounded-xl">
+                <div className="text-center py-8 text-on-surface-variant bg-white dark:bg-gray-900 border border-outline-variant rounded-xl">
                   <span className="material-symbols-outlined text-[48px] block mb-2 text-outline">confirmation_number</span>
                   <p className="font-body-md text-body-md">No active tickets yet.</p>
                   <Link href="/events" className="font-label-sm text-label-sm text-primary hover:underline mt-2 inline-block">Browse events →</Link>
@@ -100,7 +100,7 @@ export default function AttendeeDashboardPage() {
                       ? new Date(event.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
                       : 'TBD';
                     return (
-                      <div key={registration.id} className="bg-white border border-outline-variant rounded-xl overflow-hidden flex flex-col shadow-sm">
+                      <div key={registration.id} className="bg-white dark:bg-gray-900 border border-outline-variant rounded-xl overflow-hidden flex flex-col shadow-sm">
                         <div className="h-32 bg-surface-variant relative">
                           {event?.bannerUrl ? (
                             <img src={event.bannerUrl} alt={event.title} className="w-full h-full object-cover" />
@@ -109,7 +109,7 @@ export default function AttendeeDashboardPage() {
                               <span className="material-symbols-outlined text-[48px] text-primary/30">event</span>
                             </div>
                           )}
-                          <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded text-primary font-label-sm text-label-sm flex items-center gap-1 shadow-sm border border-outline-variant/20">
+                          <div className="absolute top-3 left-3 bg-white dark:bg-gray-900/90 backdrop-blur-sm px-2 py-1 rounded text-primary font-label-sm text-label-sm flex items-center gap-1 shadow-sm border border-outline-variant/20">
                             <span className="material-symbols-outlined text-[16px]">calendar_today</span>
                             {formattedDate}
                           </div>
@@ -158,10 +158,10 @@ export default function AttendeeDashboardPage() {
                 </div>
                 <div className="space-y-2">
                   {bookmarks.map(b => (
-                    <div key={b.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-indigo-200 hover:bg-indigo-50 transition-colors group">
+                    <div key={b.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-indigo-200 hover:bg-indigo-50 dark:bg-indigo-950 transition-colors group">
                       <Link href={`/events/${b.eventId}`} className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{b.event?.title}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{b.event?.title}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                           {b.event?.college?.name}
                           {b.event?.startDate && ` · ${new Date(b.event.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`}
                         </p>
@@ -173,7 +173,7 @@ export default function AttendeeDashboardPage() {
                         />
                         <button
                           onClick={() => handleBookmarkRemove(b.eventId)}
-                          className="text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                          className="text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
                           title="Remove bookmark"
                         >
                           <span className="material-symbols-outlined text-[18px]">bookmark_remove</span>
@@ -195,12 +195,12 @@ export default function AttendeeDashboardPage() {
               {isLoadingEvents && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[1, 2].map((i) => (
-                    <div key={i} className="bg-white border border-outline-variant rounded-xl p-4 flex gap-4 animate-pulse">
-                      <div className="w-24 h-24 rounded-lg bg-gray-200 shrink-0" />
+                    <div key={i} className="bg-white dark:bg-gray-900 border border-outline-variant rounded-xl p-4 flex gap-4 animate-pulse">
+                      <div className="w-24 h-24 rounded-lg bg-gray-200 dark:bg-gray-700 shrink-0" />
                       <div className="flex-1 flex flex-col gap-2 justify-center">
-                        <div className="h-4 bg-gray-200 rounded w-3/4" />
-                        <div className="h-3 bg-gray-200 rounded w-full" />
-                        <div className="h-3 bg-gray-200 rounded w-1/2" />
+                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+                        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+                        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
                       </div>
                     </div>
                   ))}
@@ -225,7 +225,7 @@ export default function AttendeeDashboardPage() {
                       <Link
                         key={event.id}
                         href={`/events/${event.id}`}
-                        className="bg-white border border-outline-variant rounded-xl p-4 flex gap-4 hover:shadow-[0_4px_20px_rgba(46,49,146,0.08)] transition-shadow"
+                        className="bg-white dark:bg-gray-900 border border-outline-variant rounded-xl p-4 flex gap-4 hover:shadow-[0_4px_20px_rgba(46,49,146,0.08)] transition-shadow"
                       >
                         <div className="w-24 h-24 rounded-lg bg-surface-variant shrink-0 overflow-hidden flex items-center justify-center">
                           {event.bannerUrl ? (
@@ -256,7 +256,7 @@ export default function AttendeeDashboardPage() {
           {/* Right Column */}
           <div className="space-y-xl">
             {/* Recent Activity */}
-            <section className="bg-white border border-outline-variant rounded-xl p-6 shadow-sm">
+            <section className="bg-white dark:bg-gray-900 border border-outline-variant rounded-xl p-6 shadow-sm">
               <h2 className="font-title-md text-title-md text-on-surface border-b border-outline-variant pb-2 mb-4 flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
                 Recent Activity
@@ -272,8 +272,8 @@ export default function AttendeeDashboardPage() {
                       <p className="font-body-md text-body-md text-on-surface truncate max-w-[65%]">{t.event?.title}</p>
                       <span className={`font-label-sm text-label-sm text-xs px-2 py-0.5 rounded-full ${
                         t.status === 'CHECKED_IN'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-indigo-100 text-indigo-700'
+                          ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
+                          : 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300'
                       }`}>
                         {t.status === 'CHECKED_IN' ? 'Attended' : 'Registered'}
                       </span>

@@ -48,7 +48,7 @@ export default function OrgDashboardPage() {
         <div className="flex items-center gap-4">
           <button
             onClick={() => router.push('/dashboard')}
-            className="hidden md:block font-body-md text-body-md text-secondary border border-outline-variant bg-white px-4 py-2 rounded hover:bg-surface-variant transition-colors"
+            className="hidden md:block font-body-md text-body-md text-secondary border border-outline-variant bg-white dark:bg-gray-900 px-4 py-2 rounded hover:bg-surface-variant transition-colors"
           >
             Switch to Attendee
           </button>
@@ -76,7 +76,7 @@ export default function OrgDashboardPage() {
         {/* Stats */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-md">
           {stats.map((stat) => (
-            <div key={stat.label} className="bg-white border border-outline-variant rounded-xl p-4 shadow-sm">
+            <div key={stat.label} className="bg-white dark:bg-gray-900 border border-outline-variant rounded-xl p-4 shadow-sm">
               <div className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center mb-3`}>
                 <span className={`material-symbols-outlined text-[22px] ${stat.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>{stat.icon}</span>
               </div>
@@ -87,7 +87,7 @@ export default function OrgDashboardPage() {
         </section>
 
         {/* Events Table */}
-        <section className="bg-white border border-outline-variant rounded-xl shadow-sm overflow-hidden">
+        <section className="bg-white dark:bg-gray-900 border border-outline-variant rounded-xl shadow-sm overflow-hidden">
           <div className="p-lg border-b border-outline-variant flex justify-between items-center">
             <h2 className="font-title-md text-title-md text-on-surface">My Events</h2>
             <Link href="/org/events/create" className="font-label-sm text-label-sm bg-primary text-on-primary px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-1">
@@ -109,11 +109,11 @@ export default function OrgDashboardPage() {
                 {isLoading && (
                   Array.from({ length: 3 }).map((_, i) => (
                     <tr key={i} className="animate-pulse">
-                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 rounded w-40" /></td>
-                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 rounded w-24" /></td>
-                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 rounded w-20" /></td>
-                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 rounded w-16" /></td>
-                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 rounded w-24" /></td>
+                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-40" /></td>
+                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24" /></td>
+                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20" /></td>
+                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16" /></td>
+                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24" /></td>
                     </tr>
                   ))
                 )}
@@ -171,7 +171,7 @@ export default function OrgDashboardPage() {
             { href: "/org/events/create", icon: "add_circle", title: "Create New Event", desc: "Start building your next event." },
             { href: "/org/members", icon: "group", title: "Team Members", desc: "Manage your organiser team and permissions." },
           ].map((item) => (
-            <Link key={item.href} href={item.href} className="bg-white border border-outline-variant rounded-xl p-4 shadow-sm hover:shadow-md hover:border-primary transition-all group flex items-start gap-4">
+            <Link key={item.href} href={item.href} className="bg-white dark:bg-gray-900 border border-outline-variant rounded-xl p-4 shadow-sm hover:shadow-md hover:border-primary transition-all group flex items-start gap-4">
               <div className="w-10 h-10 rounded-xl bg-primary-container/20 flex items-center justify-center shrink-0 group-hover:bg-primary-container transition-colors">
                 <span className="material-symbols-outlined text-primary text-[22px]">{item.icon}</span>
               </div>

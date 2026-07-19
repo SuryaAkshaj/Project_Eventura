@@ -8,18 +8,18 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="max-w-3xl mx-auto px-6 py-16">
         <div className="mb-10">
-          <Link href="/" className="text-indigo-600 text-sm hover:underline">← Back to Eventura</Link>
-          <h1 className="text-3xl font-bold text-gray-900 mt-4 mb-2">Privacy Policy</h1>
-          <p className="text-gray-500 text-sm">Last updated: June 2026</p>
+          <Link href="/" className="text-indigo-600 dark:text-indigo-400 text-sm hover:underline">← Back to Eventura</Link>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-4 mb-2">Privacy Policy</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">Last updated: June 2026</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-8 space-y-8 text-gray-600 leading-relaxed">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-8 space-y-8 text-gray-600 dark:text-gray-400 leading-relaxed">
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">1. Information We Collect</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">1. Information We Collect</h2>
             <p className="mb-3">We collect the following information when you use Eventura:</p>
             <ul className="list-disc pl-5 space-y-2 text-sm">
               <li><strong>Account information:</strong> Name, email address, profile photo</li>
@@ -31,7 +31,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">2. How We Use Your Information</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">2. How We Use Your Information</h2>
             <ul className="list-disc pl-5 space-y-2 text-sm">
               <li>To provide and operate the Eventura platform</li>
               <li>To process event registrations and payments</li>
@@ -43,22 +43,22 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">3. Third-Party Services</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">3. Third-Party Services</h2>
             <p className="mb-3">We use the following third-party services. Each has its own privacy policy:</p>
             <ul className="list-disc pl-5 space-y-2 text-sm">
-              <li><strong>Razorpay</strong> — Payment processing (<a href="https://razorpay.com/privacy/" className="text-indigo-600 hover:underline" target="_blank" rel="noopener noreferrer">Privacy Policy</a>)</li>
-              <li><strong>Cloudinary</strong> — Image and media storage (<a href="https://cloudinary.com/privacy" className="text-indigo-600 hover:underline" target="_blank" rel="noopener noreferrer">Privacy Policy</a>)</li>
-              <li><strong>Resend</strong> — Transactional email delivery (<a href="https://resend.com/legal/privacy-policy" className="text-indigo-600 hover:underline" target="_blank" rel="noopener noreferrer">Privacy Policy</a>)</li>
+              <li><strong>Razorpay</strong> — Payment processing (<a href="https://razorpay.com/privacy/" className="text-indigo-600 dark:text-indigo-400 hover:underline" target="_blank" rel="noopener noreferrer">Privacy Policy</a>)</li>
+              <li><strong>Cloudinary</strong> — Image and media storage (<a href="https://cloudinary.com/privacy" className="text-indigo-600 dark:text-indigo-400 hover:underline" target="_blank" rel="noopener noreferrer">Privacy Policy</a>)</li>
+              <li><strong>Resend</strong> — Transactional email delivery (<a href="https://resend.com/legal/privacy-policy" className="text-indigo-600 dark:text-indigo-400 hover:underline" target="_blank" rel="noopener noreferrer">Privacy Policy</a>)</li>
             </ul>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">4. Data Retention</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">4. Data Retention</h2>
             <p>We retain your data for as long as your account is active, plus 2 years after account closure. Audit logs and financial records are retained for 7 years as required by Indian law. You may request deletion of your account data by contacting us.</p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">5. Your Rights</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">5. Your Rights</h2>
             <ul className="list-disc pl-5 space-y-2 text-sm">
               <li><strong>Access:</strong> Request a copy of your personal data</li>
               <li><strong>Correction:</strong> Update inaccurate information</li>
@@ -69,14 +69,14 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">6. Security</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">6. Security</h2>
             <p>We protect your data using industry-standard measures including encrypted connections (TLS), JWT authentication with short-lived tokens, Redis-based token blacklisting on logout, and regular security audits.</p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">7. Contact</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">7. Contact</h2>
             <p>For privacy concerns or data requests, contact our Data Protection Officer at{' '}
-              <a href="mailto:privacy@eventura.app" className="text-indigo-600 hover:underline">privacy@eventura.app</a>
+              <a href="mailto:privacy@eventura.app" className="text-indigo-600 dark:text-indigo-400 hover:underline">privacy@eventura.app</a>
             </p>
           </section>
 

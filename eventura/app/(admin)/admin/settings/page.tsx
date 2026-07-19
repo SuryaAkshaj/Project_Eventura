@@ -73,7 +73,7 @@ export default function AdminSettingsPage() {
                     aria-checked={settings.platformFeeEnabled}
                   >
                     <span
-                      className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${
+                      className={`inline-block h-5 w-5 transform rounded-full bg-white dark:bg-gray-900 shadow-sm transition-transform ${
                         settings.platformFeeEnabled ? "translate-x-6" : "translate-x-1"
                       }`}
                     />
@@ -134,7 +134,7 @@ export default function AdminSettingsPage() {
                     aria-checked={settings.maintenanceMode}
                   >
                     <span
-                      className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${
+                      className={`inline-block h-5 w-5 transform rounded-full bg-white dark:bg-gray-900 shadow-sm transition-transform ${
                         settings.maintenanceMode ? "translate-x-6" : "translate-x-1"
                       }`}
                     />

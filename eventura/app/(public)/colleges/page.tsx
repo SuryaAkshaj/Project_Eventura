@@ -35,13 +35,13 @@ export default async function CollegesPage() {
   const colleges = await getColleges();
 
   const typeColors: Record<string, string> = {
-    IIT: 'bg-blue-100 text-blue-700',
-    NIT: 'bg-green-100 text-green-700',
-    IIIT: 'bg-purple-100 text-purple-700',
-    IIM: 'bg-orange-100 text-orange-700',
-    Deemed: 'bg-amber-100 text-amber-700',
-    Private: 'bg-indigo-100 text-indigo-700',
-    Government: 'bg-gray-100 text-gray-700',
+    IIT: 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300',
+    NIT: 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300',
+    IIIT: 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300',
+    IIM: 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300',
+    Deemed: 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300',
+    Private: 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300',
+    Government: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300',
   };
 
   const typeLabels: Record<string, string> = {
@@ -155,7 +155,7 @@ export default async function CollegesPage() {
                 <div className="flex items-center gap-3 mb-4">
                   <span
                     className={`text-xs px-2.5 py-1 rounded-full font-medium ${
-                      typeColors[type] || 'bg-gray-100 text-gray-700'
+                      typeColors[type] || 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
                     }`}
                   >
                     {type}

@@ -70,12 +70,10 @@ export default function QRScannerPage() {
     setScanState("scanning");
 
     try {
-      // QR value format: `${qrToken}|${nonce}|${registrationId}`
-      const parts = qrValue.split('|');
-      const qrToken = parts[0];
+      // QR value format: `registrationId|hmacToken` (static, no nonce)
       const eventId = params.id as string;
 
-      const response = await registrationsApi.validateQR(qrToken, eventId);
+      const response = await registrationsApi.validateQR(qrValue, eventId);
       const { result, message, attendee, checkedInAt } = response.data.data;
 
       setScanResult({ result, message, attendee, checkedInAt });
@@ -127,7 +125,7 @@ export default function QRScannerPage() {
     success: { bg: "bg-[#f0f9f1]", border: "border-[#c6e5ca]", icon: "check_circle", iconColor: "text-[#2e7d32]", title: "Check-In Successful!", sub: "Attendee verified and admitted." },
     duplicate: { bg: "bg-tertiary-fixed/30", border: "border-tertiary-fixed", icon: "warning", iconColor: "text-tertiary", title: "Duplicate Scan", sub: "This ticket has already been scanned." },
     invalid: { bg: "bg-error-container/20", border: "border-error-container", icon: "cancel", iconColor: "text-error", title: "Invalid Ticket", sub: "This ticket is not valid for this event." },
-    payment_pending: { bg: "bg-amber-50", border: "border-amber-200", icon: "payment", iconColor: "text-amber-600", title: "Payment Pending", sub: "This attendee has not completed payment." },
+    payment_pending: { bg: "bg-amber-50 dark:bg-amber-950", border: "border-amber-200", icon: "payment", iconColor: "text-amber-600 dark:text-amber-400", title: "Payment Pending", sub: "This attendee has not completed payment." },
   };
 
   return (
@@ -213,7 +211,7 @@ export default function QRScannerPage() {
                     type="text"
                     value={manualInput}
                     onChange={(e) => setManualInput(e.target.value)}
-                    placeholder="Paste QR value: token|nonce|registrationId"
+                    placeholder="Paste QR value: registrationId|token"
                     className="flex-1 border border-outline-variant rounded-lg px-3 py-2 font-body-md text-body-md text-on-surface bg-surface focus:outline-none focus:border-primary"
                     onKeyDown={(e) => e.key === 'Enter' && handleScan(manualInput)}
                   />

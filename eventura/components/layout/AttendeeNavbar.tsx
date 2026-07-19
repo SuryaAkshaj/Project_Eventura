@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import RoleSwitcher from "@/components/layout/RoleSwitcher";
+import { ThemeToggleIcon } from "@/components/ui/ThemeToggle";
 import { useAuthStore } from "@/lib/store/authStore";
 import { authApi } from "@/lib/api/auth.api";
 
@@ -71,6 +72,7 @@ export default function AttendeeNavbar() {
 
           {/* Icon strip */}
           <div className="flex items-center gap-1 border-l border-outline-variant pl-3">
+            <ThemeToggleIcon />
             <button
               id="nav-notifications-btn"
               onClick={() => alert('Notifications coming soon!')}

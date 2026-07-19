@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { ThemeToggleIcon } from "@/components/ui/ThemeToggle";
 import { useAuthStore } from "@/lib/store/authStore";
 import { authApi } from "@/lib/api/auth.api";
 
@@ -71,6 +72,10 @@ export default function AdminSidebar() {
       </div>
 
       <div className="p-md border-t border-primary-container">
+        <div className="flex items-center justify-between px-4 py-2 mb-1">
+          <span className="text-xs text-primary-fixed-dim">Theme</span>
+          <ThemeToggleIcon className="text-primary-fixed-dim" />
+        </div>
         <ul className="space-y-sm">
           <li>
             <Link

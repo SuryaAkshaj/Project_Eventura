@@ -34,13 +34,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 const typeColors: Record<string, string> = {
-  IIT: 'bg-blue-100 text-blue-700',
-  NIT: 'bg-green-100 text-green-700',
-  IIIT: 'bg-purple-100 text-purple-700',
-  IIM: 'bg-orange-100 text-orange-700',
-  Deemed: 'bg-amber-100 text-amber-700',
-  Private: 'bg-indigo-100 text-indigo-700',
-  Government: 'bg-gray-100 text-gray-700',
+  IIT: 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300',
+  NIT: 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300',
+  IIIT: 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300',
+  IIM: 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300',
+  Deemed: 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300',
+  Private: 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300',
+  Government: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300',
 };
 
 export default async function CollegePage({ params }: Props) {
@@ -128,14 +128,14 @@ export default async function CollegePage({ params }: Props) {
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="font-headline-lg text-headline-lg text-on-surface">{college.name}</h1>
               {college.approvalStatus === 'APPROVED' && (
-                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                <span className="text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full font-medium">
                   ✓ Verified
                 </span>
               )}
               {college.type && (
                 <span
                   className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                    typeColors[college.type] || 'bg-gray-100 text-gray-600'
+                    typeColors[college.type] || 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                   }`}
                 >
                   {college.type}
@@ -280,7 +280,7 @@ export default async function CollegePage({ params }: Props) {
                       <span
                         className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 font-medium ${
                           event.isFree
-                            ? 'bg-green-100 text-green-700'
+                            ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
                             : 'bg-primary-container text-on-primary-container'
                         }`}
                       >

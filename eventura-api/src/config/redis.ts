@@ -32,7 +32,24 @@ redis.on('connect', () => {
 
 redis.on('ready', () => {
   logger.info('Redis: ready to accept commands');
+  // Mission 29: clean up old QR nonce keys (one-time, safe to leave)
+  cleanupOldQRNonces();
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// One-time cleanup of legacy QR nonce keys after static QR migration
+// ─────────────────────────────────────────────────────────────────────────────
+async function cleanupOldQRNonces() {
+  try {
+    const keys = await redis.keys('nonce:*');
+    if (keys.length > 0) {
+      await redis.del(...keys);
+      logger.info(`Cleaned up ${keys.length} old QR nonce keys`);
+    }
+  } catch (err) {
+    logger.warn('QR nonce cleanup failed (non-critical):', err);
+  }
+}
 
 redis.on('error', (err) => {
   logger.error('Redis error:', err.message);

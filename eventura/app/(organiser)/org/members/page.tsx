@@ -139,7 +139,7 @@ export default function OrgMembersPage() {
             {isLoading ? (
               <div className="animate-pulse space-y-3 p-4">
                 {[...Array(5)].map((_, i) => (
-                  <div key={i} className="h-14 bg-gray-100 rounded-lg" />
+                  <div key={i} className="h-14 bg-gray-100 dark:bg-gray-800 rounded-lg" />
                 ))}
               </div>
             ) : filtered.length === 0 ? (

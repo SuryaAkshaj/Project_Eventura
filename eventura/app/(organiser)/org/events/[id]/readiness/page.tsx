@@ -87,8 +87,8 @@ export default function ReadinessChecklistPage() {
         </header>
         <main className="flex-grow flex flex-col items-center py-xl px-margin-mobile md:px-margin-desktop bg-surface-container-low">
           <div className="w-full max-w-3xl animate-pulse space-y-4">
-            <div className="h-8 bg-gray-200 rounded w-1/2" />
-            {[1, 2, 3, 4].map((i) => <div key={i} className="h-20 bg-gray-200 rounded-xl" />)}
+            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+            {[1, 2, 3, 4].map((i) => <div key={i} className="h-20 bg-gray-200 dark:bg-gray-700 rounded-xl" />)}
           </div>
         </main>
       </div>

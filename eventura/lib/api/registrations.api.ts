@@ -24,9 +24,9 @@ export const registrationsApi = {
   getQRData: (registrationId: string) =>
     apiClient.get(`/qr/${registrationId}`),
 
-  // Validate QR (for scanner)
-  validateQR: (qrToken: string, eventId: string) =>
-    apiClient.post('/qr/validate', { qrToken, eventId }),
+  // Validate QR (for scanner) — sends full qrValue (registrationId|hmacToken)
+  validateQR: (qrValue: string, eventId: string) =>
+    apiClient.post('/qr/validate', { qrValue, eventId }),
 
   // Get event attendees (organiser)
   getEventAttendees: (eventId: string) =>

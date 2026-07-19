@@ -18,34 +18,34 @@ const steps = [
 
 const typeConfig: Record<EventType, { icon: string; label: string; color: string; hoverBorder: string; checkColor: string; tags: string[]; examples: string[]; tagBg: string; tagText: string }> = {
   FEST: {
-    icon: '🎪', label: 'Fest / Cultural Event', color: 'bg-indigo-50 text-indigo-700', hoverBorder: 'hover:border-indigo-400',
+    icon: '🎪', label: 'Fest / Cultural Event', color: 'bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300', hoverBorder: 'hover:border-indigo-400',
     checkColor: 'text-indigo-400', tags: ['Multi-day', 'Sub-events', 'Accommodation', 'Sponsors'],
     examples: ['Techfest, Mood Indigo, Saarang', 'Sports meets, Cultural nights', 'Has sub-events inside'],
-    tagBg: 'bg-indigo-50', tagText: 'text-indigo-600',
+    tagBg: 'bg-indigo-50 dark:bg-indigo-950', tagText: 'text-indigo-600 dark:text-indigo-400',
   },
   COMPETITION: {
-    icon: '🏆', label: 'Competition', color: 'bg-amber-50 text-amber-700', hoverBorder: 'hover:border-amber-400',
+    icon: '🏆', label: 'Competition', color: 'bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300', hoverBorder: 'hover:border-amber-400',
     checkColor: 'text-amber-400', tags: ['Prize Pool', 'Team Size', 'Rules', 'Judging'],
     examples: ['Hackathons, Debates, Case Studies', 'Coding contests, Robotics', 'Has prizes and team sizes'],
-    tagBg: 'bg-amber-50', tagText: 'text-amber-600',
+    tagBg: 'bg-amber-50 dark:bg-amber-950', tagText: 'text-amber-600 dark:text-amber-400',
   },
   WORKSHOP: {
-    icon: '🛠️', label: 'Workshop', color: 'bg-green-50 text-green-700', hoverBorder: 'hover:border-green-400',
+    icon: '🛠️', label: 'Workshop', color: 'bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300', hoverBorder: 'hover:border-green-400',
     checkColor: 'text-green-400', tags: ['Sessions', 'Certificate', 'Hands-on', 'Trainer'],
     examples: ['AI/ML workshops, Design sprints', 'Coding bootcamps', 'Certificate provided'],
-    tagBg: 'bg-green-50', tagText: 'text-green-600',
+    tagBg: 'bg-green-50 dark:bg-green-950', tagText: 'text-green-600 dark:text-green-400',
   },
   SEMINAR: {
-    icon: '🎤', label: 'Seminar / Talk', color: 'bg-purple-50 text-purple-700', hoverBorder: 'hover:border-purple-400',
+    icon: '🎤', label: 'Seminar / Talk', color: 'bg-purple-50 text-purple-700 dark:text-purple-300', hoverBorder: 'hover:border-purple-400',
     checkColor: 'text-purple-400', tags: ['Speaker', 'Q&A', 'Free entry', 'Networking'],
     examples: ['Guest lectures, Panel discussions', 'Industry talks, TED-style', 'Usually free to attend'],
     tagBg: 'bg-purple-50', tagText: 'text-purple-600',
   },
   OTHER: {
-    icon: '📅', label: 'Other Event', color: 'bg-gray-50 text-gray-700', hoverBorder: 'hover:border-gray-400',
-    checkColor: 'text-gray-400', tags: ['Flexible', 'General'],
+    icon: '📅', label: 'Other Event', color: 'bg-gray-50 dark:bg-gray-950 text-gray-700 dark:text-gray-300', hoverBorder: 'hover:border-gray-400',
+    checkColor: 'text-gray-400 dark:text-gray-500', tags: ['Flexible', 'General'],
     examples: ['Any other type of event'],
-    tagBg: 'bg-gray-50', tagText: 'text-gray-600',
+    tagBg: 'bg-gray-50 dark:bg-gray-950', tagText: 'text-gray-600 dark:text-gray-400',
   },
 };
 
@@ -341,7 +341,7 @@ function EventCreatorWizardContent() {
             </span>
           )}
           {parentId && parentTitle && (
-            <span className="text-sm text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-full">
+            <span className="text-sm text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950 border border-indigo-200 px-3 py-1 rounded-full">
               Adding to: <strong>{decodeURIComponent(parentTitle)}</strong>
             </span>
           )}

@@ -156,18 +156,18 @@ export default function EventDetailPage() {
   if (isLoading) {
     return (
       <div className="flex-grow w-full max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop py-xl animate-pulse">
-        <div className="h-4 bg-gray-200 rounded w-48 mb-md" />
-        <div className="w-full h-[300px] md:h-[400px] bg-gray-200 rounded-xl mb-xl" />
+        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-md" />
+        <div className="w-full h-[300px] md:h-[400px] bg-gray-200 dark:bg-gray-700 rounded-xl mb-xl" />
         <div className="flex flex-col md:flex-row gap-gutter">
           <div className="w-full md:w-[70%] flex flex-col gap-xl">
             <div className="grid grid-cols-2 gap-md">
-              {[1, 2].map((i) => <div key={i} className="h-24 bg-gray-200 rounded-xl" />)}
+              {[1, 2].map((i) => <div key={i} className="h-24 bg-gray-200 dark:bg-gray-700 rounded-xl" />)}
             </div>
-            <div className="h-64 bg-gray-200 rounded-xl" />
-            <div className="h-48 bg-gray-200 rounded-xl" />
+            <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded-xl" />
+            <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded-xl" />
           </div>
           <div className="w-full md:w-[30%]">
-            <div className="h-64 bg-gray-200 rounded-xl" />
+            <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded-xl" />
           </div>
         </div>
       </div>
@@ -211,7 +211,7 @@ export default function EventDetailPage() {
       <div className="flex-grow w-full max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop py-xl flex items-center justify-center">
         <div className="bg-surface border border-outline-variant rounded-xl shadow-sm max-w-lg w-full overflow-hidden">
           <div className="bg-primary p-xl text-center">
-            <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-4">
+            <div className="w-20 h-20 rounded-full bg-white dark:bg-gray-900/20 flex items-center justify-center mx-auto mb-4">
               <span className="material-symbols-outlined text-[48px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>
                 check_circle
               </span>
@@ -300,7 +300,7 @@ export default function EventDetailPage() {
               <span className="px-3 py-1 bg-surface/90 text-primary rounded text-label-sm uppercase tracking-wider backdrop-blur-sm border border-outline-variant">{event.format}</span>
             )}
             {event.status === 'DRAFT' && (
-              <span className="px-3 py-1 bg-yellow-100/90 text-yellow-800 rounded text-label-sm uppercase tracking-wider backdrop-blur-sm">Draft</span>
+              <span className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/90 text-yellow-800 rounded text-label-sm uppercase tracking-wider backdrop-blur-sm">Draft</span>
             )}
             {/* Deadline badge on hero */}
             <DeadlineBadge
@@ -359,15 +359,15 @@ export default function EventDetailPage() {
 
           {/* Prize Pool info */}
           {event.prizePool && Number(event.prizePool) > 0 && (
-            <section className="bg-amber-50 border border-amber-200 rounded-xl p-md flex items-center gap-4">
+            <section className="bg-amber-50 dark:bg-amber-950 border border-amber-200 rounded-xl p-md flex items-center gap-4">
               <span className="text-4xl">🏆</span>
               <div>
-                <p className="font-label-sm text-label-sm text-amber-700 uppercase tracking-wide mb-1">Total Prize Pool</p>
+                <p className="font-label-sm text-label-sm text-amber-700 dark:text-amber-300 uppercase tracking-wide mb-1">Total Prize Pool</p>
                 <p className="font-headline-md text-headline-md text-amber-800">₹{Number(event.prizePool).toLocaleString('en-IN')}</p>
               </div>
               {event.teamSizeMin && event.teamSizeMax && (
                 <div className="ml-auto text-right">
-                  <p className="font-label-sm text-label-sm text-amber-700 uppercase tracking-wide mb-1">Team Size</p>
+                  <p className="font-label-sm text-label-sm text-amber-700 dark:text-amber-300 uppercase tracking-wide mb-1">Team Size</p>
                   <p className="font-title-md text-amber-800">{event.teamSizeMin}–{event.teamSizeMax} members</p>
                 </div>
               )}
@@ -483,12 +483,12 @@ export default function EventDetailPage() {
                       </div>
                       <div className="flex items-center gap-3">
                         {sub.prizePool && Number(sub.prizePool) > 0 && (
-                          <span className="text-sm font-semibold text-amber-600">
+                          <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">
                             ₹{Number(sub.prizePool).toLocaleString('en-IN')}
                           </span>
                         )}
                         <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                          sub.isFree ? 'bg-green-100 text-green-700' : 'bg-primary-container/20 text-primary'
+                          sub.isFree ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' : 'bg-primary-container/20 text-primary'
                         }`}>
                           {sub.isFree ? 'Free' : `₹${Number(sub.ticketPrice)}`}
                         </span>
@@ -507,7 +507,7 @@ export default function EventDetailPage() {
               <h3 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
                 🏨 Accommodation Available
               </h3>
-              <p className="text-sm text-blue-700">
+              <p className="text-sm text-blue-700 dark:text-blue-300">
                 {event.accommodationInfo || 'Accommodation details will be shared after registration.'}
               </p>
             </section>
@@ -517,7 +517,7 @@ export default function EventDetailPage() {
           {event?.eventType === 'FEST' && event?.guestPerformers && (
             <section className="bg-purple-50 rounded-xl border border-purple-100 p-5">
               <h3 className="font-semibold text-purple-800 mb-2">🎭 Guest Performers</h3>
-              <p className="text-sm text-purple-700">{event.guestPerformers}</p>
+              <p className="text-sm text-purple-700 dark:text-purple-300">{event.guestPerformers}</p>
             </section>
           )}
 
@@ -536,32 +536,32 @@ export default function EventDetailPage() {
 
           {/* Ratings Section */}
           {ratings && ratings.totalReviews > 0 && (
-            <section className="bg-white rounded-xl border border-gray-200 p-6">
+            <section className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
               <h2 className="font-headline-lg text-headline-lg text-on-surface mb-md pb-4 border-b border-outline-variant flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
                 Attendee Reviews ({ratings.totalReviews})
               </h2>
               <div className="flex items-center gap-6 mb-6">
                 <div className="text-center shrink-0">
-                  <p className="text-4xl font-bold text-indigo-700">{ratings.averageRating}</p>
+                  <p className="text-4xl font-bold text-indigo-700 dark:text-indigo-300">{ratings.averageRating}</p>
                   <div className="flex gap-0.5 mt-1 justify-center">
                     {[1,2,3,4,5].map(star => (
                       <span key={star} className={`text-lg ${star <= Math.round(ratings.averageRating) ? 'text-amber-400' : 'text-gray-200'}`}>★</span>
                     ))}
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">out of 5</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">out of 5</p>
                 </div>
                 <div className="flex-1 space-y-1">
                   {[5,4,3,2,1].map(star => (
                     <div key={star} className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500 w-4">{star}★</span>
-                      <div className="flex-1 bg-gray-100 rounded-full h-2">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 w-4">{star}★</span>
+                      <div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-full h-2">
                         <div
                           className="bg-amber-400 h-2 rounded-full transition-all"
                           style={{ width: ratings.totalReviews > 0 ? `${(ratings.distribution[star] / ratings.totalReviews) * 100}%` : '0%' }}
                         />
                       </div>
-                      <span className="text-xs text-gray-400 w-4">{ratings.distribution[star]}</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500 w-4">{ratings.distribution[star]}</span>
                     </div>
                   ))}
                 </div>
@@ -571,9 +571,9 @@ export default function EventDetailPage() {
 
           {/* Rate this event — only show if user is registered (has attended) */}
           {isPurchased && !ratingSubmitted && (
-            <section className="bg-indigo-50 rounded-xl border border-indigo-100 p-6">
+            <section className="bg-indigo-50 dark:bg-indigo-950 rounded-xl border border-indigo-100 p-6">
               <h3 className="font-title-md text-title-md text-indigo-800 mb-3 flex items-center gap-2">
-                <span className="material-symbols-outlined text-indigo-600" style={{ fontVariationSettings: "'FILL' 1" }}>rate_review</span>
+                <span className="material-symbols-outlined text-indigo-600 dark:text-indigo-400" style={{ fontVariationSettings: "'FILL' 1" }}>rate_review</span>
                 Rate this event
               </h3>
               <div className="flex gap-2 mb-3">
@@ -592,7 +592,7 @@ export default function EventDetailPage() {
                 onChange={e => setUserComment(e.target.value)}
                 placeholder="Share your experience (optional)"
                 rows={3}
-                className="w-full px-3 py-2 border border-indigo-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white resize-none mb-3"
+                className="w-full px-3 py-2 border border-indigo-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-900 resize-none mb-3"
               />
               <button
                 onClick={async () => {
@@ -622,8 +622,8 @@ export default function EventDetailPage() {
           )}
 
           {ratingSubmitted && (
-            <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
-              <p className="text-green-700 font-medium">✓ Thank you for your review!</p>
+            <div className="bg-green-50 dark:bg-green-950 border border-green-200 rounded-xl p-4 text-center">
+              <p className="text-green-700 dark:text-green-300 font-medium">✓ Thank you for your review!</p>
             </div>
           )}
         </div>

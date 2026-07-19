@@ -8,7 +8,7 @@ import { QRCodeSVG } from 'qrcode.react';
 const registrationStatusConfig: Record<string, { label: string; badgeClass: string }> = {
   REGISTERED: { label: 'Registered', badgeClass: 'bg-primary/10 text-primary border-primary/20' },
   CHECKED_IN: { label: 'Checked In', badgeClass: 'bg-sky-50 text-sky-700 border-sky-200' },
-  WAITLISTED: { label: 'Waitlisted', badgeClass: 'bg-amber-50 text-amber-700 border-amber-200' },
+  WAITLISTED: { label: 'Waitlisted', badgeClass: 'bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border-amber-200' },
   CANCELLED: { label: 'Cancelled', badgeClass: 'bg-error-container/20 text-error border-error-container' },
 };
 
@@ -38,18 +38,7 @@ export default function TicketDetailPage() {
       }
     };
     fetchTicket();
-
-    // Refresh QR nonce every 55 seconds (nonce expires every 60s)
-    const interval = setInterval(async () => {
-      try {
-        const qrRes = await registrationsApi.getQRData(params.id as string);
-        setQrData(qrRes.data.data);
-      } catch (err) {
-        console.error('QR refresh failed', err);
-      }
-    }, 55000);
-
-    return () => clearInterval(interval);
+    // No interval — QR is now static and works offline
   }, [params.id]);
 
   const handleCancel = async () => {
@@ -66,8 +55,8 @@ export default function TicketDetailPage() {
     }
   };
 
-  // QR value = combine token + nonce for security
-  const qrValue = qrData ? `${qrData.qrToken}|${qrData.nonce}|${qrData.registrationId}` : '';
+  // QR value = static HMAC-signed token (registrationId|hmacToken)
+  const qrValue = qrData?.qrValue ?? '';
 
   const formatDate = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -79,9 +68,9 @@ export default function TicketDetailPage() {
   if (isLoading) {
     return (
       <div className="flex-grow w-full max-w-2xl mx-auto px-margin-mobile md:px-margin-desktop py-xl animate-pulse">
-        <div className="h-4 bg-gray-200 rounded w-32 mb-md" />
-        <div className="h-64 bg-gray-200 rounded-xl mb-md" />
-        <div className="h-48 bg-gray-200 rounded-xl" />
+        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-md" />
+        <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded-xl mb-md" />
+        <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded-xl" />
       </div>
     );
   }
@@ -137,7 +126,7 @@ export default function TicketDetailPage() {
         <div className="p-xl flex flex-col items-center border-b border-outline-variant">
           {qrData && qrValue ? (
             <>
-              <div className="bg-white p-5 rounded-xl border border-outline-variant shadow-sm mb-3">
+              <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-outline-variant shadow-sm mb-3">
                 <QRCodeSVG
                   value={qrValue}
                   size={256}
@@ -145,7 +134,7 @@ export default function TicketDetailPage() {
                 />
               </div>
               <p className="font-label-sm text-label-sm text-on-surface-variant text-center">
-                Refreshes every 60 seconds — present at entry
+                Present this QR code at entry
               </p>
             </>
           ) : (

@@ -56,8 +56,8 @@ export default function ProfilePage() {
   if (isLoading) {
     return (
       <div className="p-6 max-w-3xl mx-auto">
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-          <div className="h-36 bg-gray-200 animate-pulse" />
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="h-36 bg-gray-200 dark:bg-gray-700 animate-pulse" />
           <div className="px-6 pb-6">
             <div className="flex items-end gap-4 -mt-10 mb-6">
               <div className="w-20 h-20 rounded-full bg-gray-300 animate-pulse border-4 border-white" />
@@ -68,7 +68,7 @@ export default function ProfilePage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="bg-gray-50 rounded-xl p-4 space-y-2">
+                <div key={i} className="bg-gray-50 dark:bg-gray-950 rounded-xl p-4 space-y-2">
                   <ShimmerLine className="h-3 w-20" />
                   <ShimmerLine className="h-5 w-40" />
                 </div>
@@ -84,7 +84,7 @@ export default function ProfilePage() {
     return (
       <div className="p-6 max-w-3xl mx-auto text-center py-20">
         <p className="text-red-500 mb-4">{error}</p>
-        <button onClick={() => window.location.reload()} className="text-indigo-600 hover:underline text-sm">
+        <button onClick={() => window.location.reload()} className="text-indigo-600 dark:text-indigo-400 hover:underline text-sm">
           Try again
         </button>
       </div>
@@ -103,34 +103,34 @@ export default function ProfilePage() {
   const roleDisplay = roleLabels[activeRole ?? 'ATTENDEE'] || (activeRole ?? 'ATTENDEE').replace(/_/g, ' ');
   const roleColor: Record<string, string> = {
     'Super Admin': 'text-purple-600',
-    'College Admin': 'text-blue-600',
-    'Club President': 'text-indigo-600',
-    'Event Manager': 'text-amber-600',
-    'Attendee': 'text-green-600',
+    'College Admin': 'text-blue-600 dark:text-blue-400',
+    'Club President': 'text-indigo-600 dark:text-indigo-400',
+    'Event Manager': 'text-amber-600 dark:text-amber-400',
+    'Attendee': 'text-green-600 dark:text-green-400',
   };
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
 
         {/* Banner — gradient header */}
         <div className="h-36 bg-gradient-to-tr from-indigo-900 via-indigo-700 to-indigo-500 relative overflow-hidden">
           {/* Subtle decorative circles */}
-          <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full bg-white/5" />
-          <div className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full bg-white/5" />
-          <div className="absolute top-4 right-20 w-20 h-20 rounded-full bg-white/5" />
+          <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full bg-white dark:bg-gray-900/5" />
+          <div className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full bg-white dark:bg-gray-900/5" />
+          <div className="absolute top-4 right-20 w-20 h-20 rounded-full bg-white dark:bg-gray-900/5" />
 
           {/* Action buttons top-right */}
           <div className="absolute top-4 right-4 flex gap-2">
             <Link
               href="/forgot-password"
-              className="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-lg backdrop-blur-sm transition-colors font-medium"
+              className="text-xs bg-white dark:bg-gray-900/20 hover:bg-white dark:bg-gray-900/30 text-white px-3 py-1.5 rounded-lg backdrop-blur-sm transition-colors font-medium"
             >
               Reset Password
             </Link>
             <button
               disabled
-              className="text-xs bg-white/10 text-white/60 px-3 py-1.5 rounded-lg font-medium cursor-not-allowed"
+              className="text-xs bg-white dark:bg-gray-900/10 text-white/60 px-3 py-1.5 rounded-lg font-medium cursor-not-allowed"
               title="Coming soon"
             >
               Edit Profile
@@ -145,8 +145,8 @@ export default function ProfilePage() {
               {initials}
             </div>
             <div className="pb-1 min-w-0">
-              <h1 className="text-xl font-bold text-gray-900 truncate">{fullName}</h1>
-              <p className={`text-sm font-semibold ${roleColor[roleDisplay] || 'text-indigo-600'}`}>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 truncate">{fullName}</h1>
+              <p className={`text-sm font-semibold ${roleColor[roleDisplay] || 'text-indigo-600 dark:text-indigo-400'}`}>
                 {roleDisplay}
               </p>
             </div>
@@ -155,54 +155,54 @@ export default function ProfilePage() {
           {/* Info grid — 2 columns on desktop */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Email</p>
-              <p className="text-gray-900 font-medium truncate">{profile?.email || '—'}</p>
+            <div className="bg-gray-50 dark:bg-gray-950 rounded-xl p-4 border border-gray-100 dark:border-gray-800">
+              <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Email</p>
+              <p className="text-gray-900 dark:text-gray-100 font-medium truncate">{profile?.email || '—'}</p>
             </div>
 
-            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Role</p>
-              <p className={`font-semibold ${roleColor[roleDisplay] || 'text-indigo-600'}`}>
+            <div className="bg-gray-50 dark:bg-gray-950 rounded-xl p-4 border border-gray-100 dark:border-gray-800">
+              <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Role</p>
+              <p className={`font-semibold ${roleColor[roleDisplay] || 'text-indigo-600 dark:text-indigo-400'}`}>
                 {roleDisplay}
               </p>
             </div>
 
-            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">
+            <div className="bg-gray-50 dark:bg-gray-950 rounded-xl p-4 border border-gray-100 dark:border-gray-800">
+              <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">
                 Email Verification
               </p>
               {profile?.isEmailVerified ? (
-                <p className="text-green-600 font-semibold flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center text-xs">✓</span>
+                <p className="text-green-600 dark:text-green-400 font-semibold flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center text-xs">✓</span>
                   Verified
                 </p>
               ) : (
-                <p className="text-amber-600 font-semibold flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center text-xs">!</span>
+                <p className="text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center text-xs">!</span>
                   Not verified
                 </p>
               )}
             </div>
 
-            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">
+            <div className="bg-gray-50 dark:bg-gray-950 rounded-xl p-4 border border-gray-100 dark:border-gray-800">
+              <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">
                 Account ID
               </p>
-              <p className="text-gray-500 font-mono text-sm truncate">
+              <p className="text-gray-500 dark:text-gray-400 font-mono text-sm truncate">
                 {profile?.id?.slice(0, 8).toUpperCase() || '—'}
               </p>
             </div>
           </div>
 
           {/* Public Profile section */}
-          <div className="mt-6 pt-6 border-t border-gray-100">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+          <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
+            <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-3">
               Public Profile
             </p>
 
             {username ? (
-              <div className="bg-indigo-50 rounded-xl p-4 border border-indigo-100">
-                <p className="text-xs text-indigo-600 mb-1 font-medium">Your profile URL</p>
+              <div className="bg-indigo-50 dark:bg-indigo-950 rounded-xl p-4 border border-indigo-100">
+                <p className="text-xs text-indigo-600 dark:text-indigo-400 mb-1 font-medium">Your profile URL</p>
                 <div className="flex items-center gap-3">
                   <p className="text-sm text-indigo-800 font-mono flex-1">
                     eventura.app/u/{username}
@@ -217,7 +217,7 @@ export default function ProfilePage() {
                   </a>
                   <button
                     onClick={() => setEditingUsername(true)}
-                    className="text-xs text-indigo-600 hover:underline"
+                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
                   >
                     Edit
                   </button>
@@ -228,14 +228,14 @@ export default function ProfilePage() {
                   href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`https://project-eventura.vercel.app/u/${username}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-3 text-xs text-blue-600 hover:underline flex items-center gap-1"
+                  className="mt-3 text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
                 >
                   Share on LinkedIn →
                 </a>
               </div>
             ) : (
-              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                <p className="text-sm text-gray-500 mb-2">Set a username to get your public profile</p>
+              <div className="bg-gray-50 dark:bg-gray-950 rounded-xl p-4 border border-gray-100 dark:border-gray-800">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Set a username to get your public profile</p>
                 <button
                   onClick={() => setEditingUsername(true)}
                   className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700"
@@ -253,12 +253,12 @@ export default function ProfilePage() {
                   value={newUsername}
                   onChange={e => setNewUsername(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
                   placeholder="your-username"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 {usernameError && (
                   <p className="text-xs text-red-500">{usernameError}</p>
                 )}
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-gray-400 dark:text-gray-500">
                   3-30 characters. Lowercase letters, numbers, and hyphens only.
                 </p>
                 <div className="flex gap-2">
@@ -271,7 +271,7 @@ export default function ProfilePage() {
                   </button>
                   <button
                     onClick={() => { setEditingUsername(false); setUsernameError(''); }}
-                    className="text-sm text-gray-500 px-4 py-2 rounded-lg hover:bg-gray-100"
+                    className="text-sm text-gray-500 dark:text-gray-400 px-4 py-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800"
                   >
                     Cancel
                   </button>
@@ -281,25 +281,25 @@ export default function ProfilePage() {
           </div>
 
           {/* Quick links */}
-          <div className="mt-6 pt-6 border-t border-gray-100">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Quick Links</p>
+          <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
+            <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-3">Quick Links</p>
             <div className="flex flex-wrap gap-2">
               <Link href="/my-tickets"
-                className="text-sm text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-lg font-medium transition-colors">
+                className="text-sm text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 hover:bg-indigo-100 dark:bg-indigo-900 px-4 py-2 rounded-lg font-medium transition-colors">
                 My Tickets
               </Link>
               <Link href="/certificates"
-                className="text-sm text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-lg font-medium transition-colors">
+                className="text-sm text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 hover:bg-indigo-100 dark:bg-indigo-900 px-4 py-2 rounded-lg font-medium transition-colors">
                 My Certificates
               </Link>
               <Link href="/events"
-                className="text-sm text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-lg font-medium transition-colors">
+                className="text-sm text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 hover:bg-indigo-100 dark:bg-indigo-900 px-4 py-2 rounded-lg font-medium transition-colors">
                 Discover Events
               </Link>
             </div>
           </div>
 
-          <p className="text-xs text-gray-400 text-center mt-6">
+          <p className="text-xs text-gray-400 dark:text-gray-500 text-center mt-6">
             To update your name or organisation details, contact{' '}
             <a href="mailto:support@eventura.app" className="text-indigo-500 hover:underline">
               support@eventura.app

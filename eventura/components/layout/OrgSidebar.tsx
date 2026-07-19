@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import RoleSwitcher from "@/components/layout/RoleSwitcher";
+import { ThemeToggleIcon } from "@/components/ui/ThemeToggle";
 import { useAuthStore } from "@/lib/store/authStore";
 import { authApi } from "@/lib/api/auth.api";
 
@@ -93,6 +94,10 @@ export default function OrgSidebar() {
 
       {/* Bottom Links + Logout */}
       <div className="p-4 border-t border-primary-container/30 space-y-0.5">
+        <div className="flex items-center justify-between mx-2 px-4 py-2">
+          <span className="text-xs text-primary-fixed-dim">Theme</span>
+          <ThemeToggleIcon className="text-primary-fixed-dim" />
+        </div>
         {bottomLinks.map((link) => (
           <Link
             key={link.href}

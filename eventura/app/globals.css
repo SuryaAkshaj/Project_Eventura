@@ -30,6 +30,28 @@
     --radius: 0.5rem;
   }
 
+  .dark {
+    --background: 222 47% 4%;
+    --foreground: 210 20% 96%;
+    --card: 220 20% 10%;
+    --card-foreground: 210 20% 96%;
+    --popover: 220 20% 10%;
+    --popover-foreground: 210 20% 96%;
+    --primary: 238 70% 65%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 213 20% 57%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 220 15% 16%;
+    --muted-foreground: 220 10% 65%;
+    --accent: 238 52% 55%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 15% 22%;
+    --input: 220 15% 22%;
+    --ring: 238 70% 65%;
+  }
+
   * {
     box-sizing: border-box;
     @apply border-border;
@@ -40,6 +62,11 @@
     background-color: #fcf8ff;
     color: #1b1b21;
     -webkit-font-smoothing: antialiased;
+  }
+
+  .dark body {
+    background-color: rgb(3 7 18);
+    color: rgb(243 244 246);
   }
 }
 
